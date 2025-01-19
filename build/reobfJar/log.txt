@@ -134,6 +134,11 @@ Adding Libraries to Inheritance
 Reading Input: C:\dev\MCUniversal\build\libs\mcuniversal-1.0-SNAPSHOT.jar
 Adding input to inheritance map
 Processing entries
+Conflicting propagated mapping for com/mazzy/mcuniversal/core/screen/DimensionalAmuletScreen/isPauseScreen()Z from net/minecraft/client/gui/screens/Screen/isPauseScreen()Z: isPauseScreen -> m_7043_
+Conflicting propagated mapping for com/mazzy/mcuniversal/core/screen/DimensionalAmuletScreen/render(Lnet/minecraft/client/gui/GuiGraphics;IIF)V from net/minecraft/client/gui/screens/Screen/render(Lnet/minecraft/client/gui/GuiGraphics;IIF)V: render -> m_88315_
+Conflicting propagated mapping for com/mazzy/mcuniversal/core/screen/DimensionalAmuletScreen/init()V from net/minecraft/client/gui/screens/Screen/init()V: init -> m_7856_
+Conflicting propagated mapping for com/mazzy/mcuniversal/core/item/DimensionalAmuletItem/use(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/InteractionHand;)Lnet/minecraft/world/InteractionResultHolder; from net/minecraft/world/item/Item/use(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/InteractionHand;)Lnet/minecraft/world/InteractionResultHolder;: use -> m_7203_
+Conflicting propagated mapping for net/minecraft/world/entity/LivingEntity/lambda$addAdditionalSaveData$3(Lnet/minecraft/nbt/CompoundTag;Lnet/minecraft/nbt/Tag;)V from net/minecraft/world/entity/player/Player/lambda$addAdditionalSaveData$3(Lnet/minecraft/nbt/CompoundTag;Lnet/minecraft/nbt/Tag;)V: lambda$addAdditionalSaveData$3 -> m_219754_
 Adding extras
 Sorting
 Writing Output: C:\dev\MCUniversal\build\reobfJar\output.jar
@@ -155,15 +160,18 @@ Writing Output: C:\dev\MCUniversal\build\reobfJar\output.jar
   com/mazzy/mcuniversal/
   com/mazzy/mcuniversal/McUniversal.class
   com/mazzy/mcuniversal/config/
-  com/mazzy/mcuniversal/config/DimensionData.class
-  com/mazzy/mcuniversal/config/ModConfig.class
+  com/mazzy/mcuniversal/config/DimensionConfig.class
   com/mazzy/mcuniversal/core/
+  com/mazzy/mcuniversal/core/client/
+  com/mazzy/mcuniversal/core/client/ClientMethods.class
   com/mazzy/mcuniversal/core/command/
   com/mazzy/mcuniversal/core/command/TestCommand.class
   com/mazzy/mcuniversal/core/data/
   com/mazzy/mcuniversal/core/data/HomeManager.class
   com/mazzy/mcuniversal/core/data/WaypointData.class
   com/mazzy/mcuniversal/core/data/WaypointManager.class
+  com/mazzy/mcuniversal/core/dimension/
+  com/mazzy/mcuniversal/core/dimension/DimensionFileHandler.class
   com/mazzy/mcuniversal/core/item/
   com/mazzy/mcuniversal/core/item/DimensionalAmuletItem.class
   com/mazzy/mcuniversal/core/screen/
@@ -172,10 +180,18 @@ Writing Output: C:\dev\MCUniversal\build\reobfJar\output.jar
   com/mazzy/mcuniversal/core/teleportation/TeleportationUnlockManager.class
   com/mazzy/mcuniversal/core/teleportation/TeleportationUtils.class
   com/mazzy/mcuniversal/event/
-  com/mazzy/mcuniversal/event/InitialSpawnHandler.class
-  com/mazzy/mcuniversal/event/ModEventHandler.class
+  com/mazzy/mcuniversal/event/ServerEvents.class
+  com/mazzy/mcuniversal/network/
+  com/mazzy/mcuniversal/network/NetworkHandler.class
+  com/mazzy/mcuniversal/network/OpenDimensionalAmuletPacket.class
   com/mazzy/mcuniversal/registration/
   com/mazzy/mcuniversal/registration/CommandRegistry.class
   com/mazzy/mcuniversal/registration/RegistryHandler.class
+  data/
+  data/mcuniversal/
+  data/mcuniversal/dimension/
+  data/mcuniversal/dimension/extra.json
+  data/mcuniversal/dimension_type/
+  data/mcuniversal/dimension_type/extra_type.json
   mcuniversal.mixins.json
   pack.mcmeta
