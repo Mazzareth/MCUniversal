@@ -1,4 +1,3 @@
-// File: DimensionalAmuletScreen.java
 package com.mazzy.mcuniversal.core.screen;
 
 import com.mazzy.mcuniversal.config.DimensionConfig;
@@ -16,6 +15,9 @@ import net.minecraft.world.level.Level;
 
 import java.util.List;
 
+/**
+ * A GUI (screen) for the "Dimensional Amulet."
+ */
 public class DimensionalAmuletScreen extends Screen {
 
     // GUI dimensions
@@ -35,9 +37,25 @@ public class DimensionalAmuletScreen extends Screen {
     // A text box for the user to input the custom nation name
     private EditBox nationNameField;
 
-    public DimensionalAmuletScreen() {
-        // Pass an empty component to avoid any inherited titles
+    // A list of dimension IDs (which the player has unlocked) passed from the server
+    private final List<String> unlockedDimensions;
+
+    /**
+     * Constructor that allows passing in the list of unlocked dimension IDs.
+     *
+     * @param unlockedDimensions The dimension IDs that this player has unlocked.
+     */
+    public DimensionalAmuletScreen(List<String> unlockedDimensions) {
         super(Component.empty());
+        this.unlockedDimensions = (unlockedDimensions != null) ? unlockedDimensions : List.of();
+    }
+
+    /**
+     * Overload constructor if nothing is passed in (for older calls or testing).
+     */
+    public DimensionalAmuletScreen() {
+        super(Component.empty());
+        this.unlockedDimensions = List.of();
     }
 
     @Override
@@ -52,6 +70,9 @@ public class DimensionalAmuletScreen extends Screen {
         rebuildSection();
     }
 
+    /**
+     * Destroys and re-creates the screen widgets based on the current section.
+     */
     private void rebuildSection() {
         // Clear all existing widgets first
         this.clearWidgets();
@@ -78,13 +99,17 @@ public class DimensionalAmuletScreen extends Screen {
         }
     }
 
+    // -----------------------------
+    // Section 0: "My Nation" UI
+    // -----------------------------
     private void initMyNationButtons() {
         // "Set Home" button
         Button setHomeButton = Button.builder(Component.literal("Set Home"), btn -> {
             // Send the "SET_HOME" action to the server
             NetworkHandler.sendToServer(new DimensionalAmuletActionPacket(Action.SET_HOME));
         }).pos(guiLeft + 15, guiTop + 40).size(70, 20).build();
-        // Disable it if we’re not in the correct dimension
+
+        // Disable if not in "mcuniversal:extra"
         setHomeButton.active = isInExtraDimension();
         this.addRenderableWidget(setHomeButton);
 
@@ -95,7 +120,7 @@ public class DimensionalAmuletScreen extends Screen {
         }).pos(guiLeft + 15, guiTop + 65).size(70, 20).build();
         this.addRenderableWidget(tpHomeButton);
 
-        // Create an EditBox for the nation name
+        // A field for nation name
         this.nationNameField = new EditBox(
                 this.font,
                 this.guiLeft + 15,
@@ -104,15 +129,13 @@ public class DimensionalAmuletScreen extends Screen {
                 20,
                 Component.literal("Nation Name")
         );
-        this.nationNameField.setMaxLength(32); // Limit to 32 characters
-        this.addRenderableWidget(this.nationNameField);
+        nationNameField.setMaxLength(32);
+        this.addRenderableWidget(nationNameField);
 
         // "Set Name" button
-        // This sends the text from the nationNameField to the server.
         Button setNameButton = Button.builder(Component.literal("Set Name"), btn -> {
             if (this.nationNameField != null) {
                 String typedName = this.nationNameField.getValue().trim();
-                // Only send if not empty
                 if (!typedName.isEmpty()) {
                     NetworkHandler.sendToServer(new DimensionalAmuletActionPacket(Action.SET_NATION_NAME, typedName));
                 }
@@ -121,10 +144,9 @@ public class DimensionalAmuletScreen extends Screen {
         this.addRenderableWidget(setNameButton);
     }
 
-    /**
-     * In this method, we dynamically create a button for each whitelisted dimension.
-     * On click, we send a new action "RANDOM_TP_DIM" with the dimension ID.
-     */
+    // -----------------------------
+    // Section 1: "Teleports" UI
+    // -----------------------------
     private void initTeleportButtons() {
         // Read dimension whitelist from config
         List<? extends String> dims = DimensionConfig.SERVER.dimensionWhitelist.get();
@@ -133,31 +155,27 @@ public class DimensionalAmuletScreen extends Screen {
         int buttonHeight = 20;
         int spacing = 5;
 
+        // For each dimension in the config, create a random-TP button.
+        // If you wanted to show only unlocked ones, you might filter them here.
         for (String dimId : dims) {
-            // Create a button for each dimension
+            // Example of enabling/disabling based on "unlockedDimensions":
+            boolean isUnlocked = this.unlockedDimensions.contains(dimId);
+
             Button btn = Button.builder(Component.literal("Rand TP " + dimId), b -> {
                 // Send a new packet specifying which dimension to random-TP into
-                NetworkHandler.sendToServer(
-                        new DimensionalAmuletActionPacket(Action.RANDOM_TP_DIM, dimId)
-                );
+                NetworkHandler.sendToServer(new DimensionalAmuletActionPacket(Action.RANDOM_TP_DIM, dimId));
             }).pos(guiLeft + 15, guiTop + yOffset).size(120, buttonHeight).build();
+
+            // Optionally disable the button if locked:
+            btn.active = isUnlocked;
 
             this.addRenderableWidget(btn);
             yOffset += (buttonHeight + spacing);
         }
-
-        // Optionally: keep an original "Rand Warp" if desired:
-        /*
-        this.addRenderableWidget(
-                Button.builder(Component.literal("Rand Warp (Overworld)"), btn -> {
-                    NetworkHandler.sendToServer(new DimensionalAmuletActionPacket(Action.RAND_WARP));
-                }).pos(guiLeft + 150, guiTop + 40).size(100, 20).build()
-        );
-        */
     }
 
     /**
-     * Check if the client player is in the "mcuniversal:extra" dimension.
+     * Helper to check if the client player is in the "mcuniversal:extra" dimension.
      */
     private boolean isInExtraDimension() {
         var mc = Minecraft.getInstance();
@@ -170,28 +188,26 @@ public class DimensionalAmuletScreen extends Screen {
 
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
-        this.renderBackground(guiGraphics); // Dark background behind our GUI
+        this.renderBackground(guiGraphics);
 
-        // Draw a slightly larger border for the entire GUI
+        // Draw a background rectangle for the GUI
         guiGraphics.fill(guiLeft, guiTop, guiLeft + xSize, guiTop + ySize, 0xFF333333);
 
-        // Separate the top tab area from the main content
+        // A line separating the top tabs from the content
         int lineY = guiTop + 35;
         guiGraphics.fill(guiLeft, lineY, guiLeft + xSize, lineY + 1, 0xFFFFFFFF);
 
-        // Area background
+        // Section background
         switch (currentSection) {
-            case 0 -> {
-                // My Nation
+            case 0 -> { // My Nation
                 guiGraphics.fill(guiLeft + 1, lineY + 1, guiLeft + xSize - 1, guiTop + ySize - 1, 0xFF4B4B4B);
             }
-            case 1 -> {
-                // Teleports
+            case 1 -> { // Teleports
                 guiGraphics.fill(guiLeft + 1, lineY + 1, guiLeft + xSize - 1, guiTop + ySize - 1, 0xFF4B5F4B);
             }
         }
 
-        // Render the buttons and other widgets (including the EditBox)
+        // Render the widgets (buttons, edit boxes, etc.)
         super.render(guiGraphics, mouseX, mouseY, partialTicks);
     }
 

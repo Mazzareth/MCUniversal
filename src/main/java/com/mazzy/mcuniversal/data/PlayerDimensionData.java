@@ -8,8 +8,12 @@ import net.minecraft.nbt.Tag;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * Concrete implementation of the IPlayerDimensionData interface.
+ * Maintains a Set of unlocked dimension IDs for the player.
+ */
 public class PlayerDimensionData implements IPlayerDimensionData {
-    // Store dimension IDs in a simple set
+    // Store dimension IDs in a simple Set.
     private final Set<String> unlockedDimensions = new HashSet<>();
 
     @Override
@@ -28,7 +32,7 @@ public class PlayerDimensionData implements IPlayerDimensionData {
     }
 
     /**
-     * Write the unlocked dimensions to NBT for saving to the player’s data file.
+     * Serialize the dimension data to NBT.
      */
     public CompoundTag saveNBTData() {
         CompoundTag tag = new CompoundTag();
@@ -43,10 +47,11 @@ public class PlayerDimensionData implements IPlayerDimensionData {
     }
 
     /**
-     * Read the unlocked dimensions from NBT.
+     * Deserialize the dimension data from NBT.
      */
     public void loadNBTData(CompoundTag nbt) {
         unlockedDimensions.clear();
+
         if (nbt.contains("UnlockedDimensions", Tag.TAG_LIST)) {
             ListTag dims = nbt.getList("UnlockedDimensions", Tag.TAG_STRING);
             for (int i = 0; i < dims.size(); i++) {

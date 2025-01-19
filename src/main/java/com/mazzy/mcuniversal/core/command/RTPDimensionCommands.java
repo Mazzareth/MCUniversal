@@ -1,7 +1,6 @@
 package com.mazzy.mcuniversal.core.command;
 
-import com.mazzy.mcuniversal.config.DimensionConfig;
-import com.mazzy.mcuniversal.data.IPlayerDimensionData;
+import com.mazzy.mcuniversal.data.RTPDimensionData;
 import com.mazzy.mcuniversal.data.PlayerDimensionDataProvider;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.CommandDispatcher;
@@ -14,35 +13,13 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Set;
 
-/**
- * Commands to lock/unlock dimensions for random-TP usage (server-wide via config),
- * plus unlocking/locking them on a per-player basis via capabilities.
- */
 public class RTPDimensionCommands {
 
-    /**
-     * Registers:
-     *
-     * 1) /unlockdimensionrtp <dimensionId>
-     *    (Adds the dimension to global whitelist)
-     * 2) /unlockdimensionrtp player <player> <dimensionId>
-     *    (Unlocks dimension for that player's personal data)
-     *
-     * 3) /lockdimensionrtp <dimensionId>
-     *    (Removes the dimension from global whitelist)
-     * 4) /lockdimensionrtp player <player> <dimensionId>
-     *    (Locks dimension for that player's personal data)
-     *
-     * @param dispatcher the active CommandDispatcher
-     */
     public static void registerCommands(CommandDispatcher<CommandSourceStack> dispatcher) {
 
-        //--------------------------------------------------------------------------------
-        // 1) Global dimension unlocking
-        //--------------------------------------------------------------------------------
+        // 1) /unlockdimensionrtp <dimensionId>
         dispatcher.register(
                 Commands.literal("unlockdimensionrtp")
                         .requires(source -> source.hasPermission(2))
@@ -56,14 +33,18 @@ public class RTPDimensionCommands {
                                 .executes(ctx -> {
                                     CommandSourceStack source = ctx.getSource();
                                     ResourceLocation dimLoc = ResourceLocationArgument.getId(ctx, "dimensionId");
-
-                                    List<? extends String> currentList = DimensionConfig.SERVER.dimensionWhitelist.get();
-                                    List<String> mutableList = new ArrayList<>(currentList);
-
                                     String dimAsString = dimLoc.toString();
-                                    if (!mutableList.contains(dimAsString)) {
-                                        mutableList.add(dimAsString);
-                                        DimensionConfig.SERVER.dimensionWhitelist.set(mutableList);
+
+                                    // Get the global data storage
+                                    ServerLevel overworld = source.getServer().overworld();
+
+                                    // Use .get(...) instead of a non-existent .getOrCreate(...)
+                                    RTPDimensionData data = RTPDimensionData.get(overworld);
+                                    Set<String> allowedDims = data.getUnlockedDimensions();
+
+                                    // Try adding the dimension
+                                    if (!allowedDims.contains(dimAsString)) {
+                                        data.addDimension(dimAsString);
                                         source.sendSuccess(
                                                 () -> Component.literal("Unlocked random-TP for dimension: " + dimAsString),
                                                 true
@@ -77,9 +58,7 @@ public class RTPDimensionCommands {
                                     }
                                 })
                         )
-                        //--------------------------------------------------------------------------------
-                        // 2) Per-player dimension unlocking
-                        //--------------------------------------------------------------------------------
+                        // 2) /unlockdimensionrtp player <player> <dimensionId>
                         .then(Commands.literal("player")
                                 .then(Commands.argument("target", EntityArgument.player())
                                         .then(Commands.argument("dimensionId", ResourceLocationArgument.id())
@@ -95,8 +74,8 @@ public class RTPDimensionCommands {
                                                     ResourceLocation dimLoc = ResourceLocationArgument.getId(ctx, "dimensionId");
 
                                                     target.getCapability(PlayerDimensionDataProvider.PLAYER_DIMENSION_DATA)
-                                                            .ifPresent(data -> {
-                                                                data.unlockDimension(dimLoc.toString());
+                                                            .ifPresent(playerData -> {
+                                                                playerData.unlockDimension(dimLoc.toString());
                                                                 source.sendSuccess(
                                                                         () -> Component.literal("Unlocked dimension ["
                                                                                 + dimLoc + "] for player "
@@ -112,9 +91,7 @@ public class RTPDimensionCommands {
                         )
         );
 
-        //--------------------------------------------------------------------------------
-        // 3) Global dimension locking
-        //--------------------------------------------------------------------------------
+        // 3) /lockdimensionrtp <dimensionId>
         dispatcher.register(
                 Commands.literal("lockdimensionrtp")
                         .requires(source -> source.hasPermission(2))
@@ -128,14 +105,18 @@ public class RTPDimensionCommands {
                                 .executes(ctx -> {
                                     CommandSourceStack source = ctx.getSource();
                                     ResourceLocation dimLoc = ResourceLocationArgument.getId(ctx, "dimensionId");
-
-                                    List<? extends String> currentList = DimensionConfig.SERVER.dimensionWhitelist.get();
-                                    List<String> mutableList = new ArrayList<>(currentList);
-
                                     String dimAsString = dimLoc.toString();
-                                    if (mutableList.contains(dimAsString)) {
-                                        mutableList.remove(dimAsString);
-                                        DimensionConfig.SERVER.dimensionWhitelist.set(mutableList);
+
+                                    // Get the data storage as above
+                                    ServerLevel overworld = source.getServer().overworld();
+
+                                    // Use .get(...) instead of a non-existent .getOrCreate(...)
+                                    RTPDimensionData data = RTPDimensionData.get(overworld);
+                                    Set<String> allowedDims = data.getUnlockedDimensions();
+
+                                    // Try removing the dimension
+                                    if (allowedDims.contains(dimAsString)) {
+                                        data.removeDimension(dimAsString);
                                         source.sendSuccess(
                                                 () -> Component.literal("Locked random-TP for dimension: " + dimAsString),
                                                 true
@@ -149,9 +130,7 @@ public class RTPDimensionCommands {
                                     }
                                 })
                         )
-                        //--------------------------------------------------------------------------------
-                        // 4) Per-player dimension locking
-                        //--------------------------------------------------------------------------------
+                        // 4) /lockdimensionrtp player <player> <dimensionId>
                         .then(Commands.literal("player")
                                 .then(Commands.argument("target", EntityArgument.player())
                                         .then(Commands.argument("dimensionId", ResourceLocationArgument.id())
@@ -167,9 +146,9 @@ public class RTPDimensionCommands {
                                                     ResourceLocation dimLoc = ResourceLocationArgument.getId(ctx, "dimensionId");
 
                                                     target.getCapability(PlayerDimensionDataProvider.PLAYER_DIMENSION_DATA)
-                                                            .ifPresent(data -> {
-                                                                if (data.isDimensionUnlocked(dimLoc.toString())) {
-                                                                    data.getUnlockedDimensions().remove(dimLoc.toString());
+                                                            .ifPresent(playerData -> {
+                                                                if (playerData.isDimensionUnlocked(dimLoc.toString())) {
+                                                                    playerData.getUnlockedDimensions().remove(dimLoc.toString());
                                                                     source.sendSuccess(
                                                                             () -> Component.literal("Locked dimension ["
                                                                                     + dimLoc + "] for player "

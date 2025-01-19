@@ -1,8 +1,10 @@
-// File: ClientMethods.java
 package com.mazzy.mcuniversal.core.client;
 
 import net.minecraft.client.Minecraft;
 import com.mazzy.mcuniversal.core.screen.DimensionalAmuletScreen;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Static client-side methods (e.g., opening GUI screens).
@@ -10,9 +12,19 @@ import com.mazzy.mcuniversal.core.screen.DimensionalAmuletScreen;
 public class ClientMethods {
 
     /**
-     * Spawn and set the DimensionalAmuletScreen as the active screen.
+     * Opens the DimensionalAmuletScreen with no dimension list.
+     * (Kept for backward compatibility, or if no data is provided.)
      */
     public static void openDimensionalAmuletScreen() {
-        Minecraft.getInstance().setScreen(new DimensionalAmuletScreen());
+        openDimensionalAmuletScreen(new ArrayList<>());
+    }
+
+    /**
+     * Opens the DimensionalAmuletScreen with a given list of unlocked dimensions.
+     *
+     * @param unlockedDimensionIds A list of dimension IDs the player has unlocked.
+     */
+    public static void openDimensionalAmuletScreen(List<String> unlockedDimensionIds) {
+        Minecraft.getInstance().setScreen(new DimensionalAmuletScreen(unlockedDimensionIds));
     }
 }
