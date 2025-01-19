@@ -1,6 +1,4 @@
-/*******************************************************************************
- * DimensionalAmuletScreen.java
- ******************************************************************************/
+// File: DimensionalAmuletScreen.java
 package com.mazzy.mcuniversal.core.screen;
 
 import com.mazzy.mcuniversal.config.DimensionConfig;
@@ -10,6 +8,7 @@ import com.mazzy.mcuniversal.network.NetworkHandler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -32,6 +31,9 @@ public class DimensionalAmuletScreen extends Screen {
 
     // Matches the dimension ID for "mcuniversal:extra"
     private static final ResourceLocation EXTRA_DIM_ID = new ResourceLocation("mcuniversal", "extra");
+
+    // A text box for the user to input the custom nation name
+    private EditBox nationNameField;
 
     public DimensionalAmuletScreen() {
         // Pass an empty component to avoid any inherited titles
@@ -93,11 +95,29 @@ public class DimensionalAmuletScreen extends Screen {
         }).pos(guiLeft + 15, guiTop + 65).size(70, 20).build();
         this.addRenderableWidget(tpHomeButton);
 
+        // Create an EditBox for the nation name
+        this.nationNameField = new EditBox(
+                this.font,
+                this.guiLeft + 15,
+                this.guiTop + 95,
+                100,
+                20,
+                Component.literal("Nation Name")
+        );
+        this.nationNameField.setMaxLength(32); // Limit to 32 characters
+        this.addRenderableWidget(this.nationNameField);
+
         // "Set Name" button
+        // This sends the text from the nationNameField to the server.
         Button setNameButton = Button.builder(Component.literal("Set Name"), btn -> {
-            // Example: pass new name as a string to the server
-            NetworkHandler.sendToServer(new DimensionalAmuletActionPacket(Action.SET_NATION_NAME, "MyNation"));
-        }).pos(guiLeft + 15, guiTop + 90).size(70, 20).build();
+            if (this.nationNameField != null) {
+                String typedName = this.nationNameField.getValue().trim();
+                // Only send if not empty
+                if (!typedName.isEmpty()) {
+                    NetworkHandler.sendToServer(new DimensionalAmuletActionPacket(Action.SET_NATION_NAME, typedName));
+                }
+            }
+        }).pos(guiLeft + 120, guiTop + 95).size(70, 20).build();
         this.addRenderableWidget(setNameButton);
     }
 
@@ -126,7 +146,7 @@ public class DimensionalAmuletScreen extends Screen {
             yOffset += (buttonHeight + spacing);
         }
 
-        // Optionally: keep an original “Rand Warp” if you want to preserve the old Overworld-only approach:
+        // Optionally: keep an original "Rand Warp" if desired:
         /*
         this.addRenderableWidget(
                 Button.builder(Component.literal("Rand Warp (Overworld)"), btn -> {
@@ -161,20 +181,39 @@ public class DimensionalAmuletScreen extends Screen {
 
         // Area background
         switch (currentSection) {
-            case 0 -> { // My Nation
+            case 0 -> {
+                // My Nation
                 guiGraphics.fill(guiLeft + 1, lineY + 1, guiLeft + xSize - 1, guiTop + ySize - 1, 0xFF4B4B4B);
             }
-            case 1 -> { // Teleports
+            case 1 -> {
+                // Teleports
                 guiGraphics.fill(guiLeft + 1, lineY + 1, guiLeft + xSize - 1, guiTop + ySize - 1, 0xFF4B5F4B);
             }
         }
 
-        // Render the buttons
+        // Render the buttons and other widgets (including the EditBox)
         super.render(guiGraphics, mouseX, mouseY, partialTicks);
     }
 
     @Override
     public boolean isPauseScreen() {
         return false;
+    }
+
+    // Ensure key typing in the EditBox is passed along
+    @Override
+    public boolean charTyped(char codePoint, int modifiers) {
+        if (this.nationNameField != null && this.nationNameField.charTyped(codePoint, modifiers)) {
+            return true;
+        }
+        return super.charTyped(codePoint, modifiers);
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (this.nationNameField != null && this.nationNameField.keyPressed(keyCode, scanCode, modifiers)) {
+            return true;
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 }

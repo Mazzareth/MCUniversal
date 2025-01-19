@@ -1,7 +1,7 @@
+// File: ServerEvents.java
 package com.mazzy.mcuniversal.event;
 
 import com.mazzy.mcuniversal.McUniversal;
-import com.mazzy.mcuniversal.core.dimension.DimensionFileHandler;
 import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -12,11 +12,12 @@ public class ServerEvents {
 
     /**
      * Runs when the server is starting.
-     * Calls our DimensionFileHandler to perform the region file setup.
+     * You could call a DimensionFileHandler or handle region file setup here
+     * if your mod needs it.
      */
     @SubscribeEvent
     public static void onServerStarting(ServerStartingEvent event) {
         MinecraftServer server = event.getServer();
-        DimensionFileHandler.setupDimensionFiles(server);
+        // Custom server-start logic can go here.
     }
 }
