@@ -1,11 +1,9 @@
-/*******************************************************************************
- * McUniversal.java
- ******************************************************************************/
 package com.mazzy.mcuniversal;
 
 import com.mazzy.mcuniversal.config.DimensionConfig;
 import com.mazzy.mcuniversal.network.NetworkHandler;
 import com.mazzy.mcuniversal.registration.RegistryHandler;
+import com.mazzy.mcuniversal.event.ChatMessageHandler;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.ModLoadingContext;
@@ -22,20 +20,18 @@ public class McUniversal {
 
     @SuppressWarnings("removal")
     public McUniversal() {
-        // Access the mod-specific event bus
+
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
 
-        // Register your configuration settings (SERVER config in this example)
         ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, DimensionConfig.SERVER_SPEC);
 
-        // Register custom items (or other objects) to the mod event bus
         RegistryHandler.ITEMS.register(modEventBus);
 
-        // Register on the global Forge event bus, if needed
         MinecraftForge.EVENT_BUS.register(this);
 
-        // Register your network packets
         NetworkHandler.register();
+
+        new ChatMessageHandler();
 
         LOGGER.info("McUniversal mod initialized");
     }
