@@ -1,15 +1,29 @@
 {
   "minecraft:recipes/decorations/crafting_table": {
     "criteria": {
-      "unlock_right_away": "2025-01-17 10:19:15 -0600"
+      "unlock_right_away": "2025-01-19 14:32:53 -0600"
     },
     "done": true
   },
   "minecraft:adventure/adventuring_time": {
     "criteria": {
-      "minecraft:forest": "2025-01-17 10:19:51 -0600"
+      "minecraft:swamp": "2025-01-19 14:32:54 -0600",
+      "minecraft:windswept_savanna": "2025-01-19 14:34:31 -0600",
+      "minecraft:plains": "2025-01-19 14:34:16 -0600"
     },
     "done": false
+  },
+  "minecraft:end/root": {
+    "criteria": {
+      "entered_end": "2025-01-19 14:33:43 -0600"
+    },
+    "done": true
+  },
+  "minecraft:story/enter_the_end": {
+    "criteria": {
+      "entered_end": "2025-01-19 14:33:43 -0600"
+    },
+    "done": true
   },
   "DataVersion": 3465
 }

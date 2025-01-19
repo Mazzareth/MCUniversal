@@ -6,7 +6,7 @@ package com.mazzy.mcuniversal.config;
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.fml.common.Mod;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 @Mod.EventBusSubscriber
@@ -28,12 +28,10 @@ public class DimensionConfig {
             builder.push("randomTeleport");
             dimensionWhitelist = builder
                     .comment("List of dimension IDs that are whitelisted for random teleportation.")
-                    .defineList("dimension_whitelist",
-                            Arrays.asList(
-                                    "minecraft:overworld",
-                                    "minecraft:the_nether",
-                                    "mcuniversal:extra"
-                            ),
+                    // Default to only Overworld. Everything else is effectively locked.
+                    .defineList(
+                            "dimension_whitelist",
+                            Collections.singletonList("minecraft:overworld"),
                             obj -> obj instanceof String
                     );
             builder.pop();

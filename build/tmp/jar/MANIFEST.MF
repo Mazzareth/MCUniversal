@@ -3,8 +3,8 @@ Specification-Title: mcuniversal
 Specification-Vendor: mazzy
 Specification-Version: 1
 Implementation-Title: mcuniversal
-Implementation-Version: 1.0-SNAPSHOT
+Implementation-Version: 0.1.0
 Implementation-Vendor: mazzy
-Implementation-Timestamp: 2025-01-19T03:33:41-0600
+Implementation-Timestamp: 2025-01-19T14:38:25-0600
 MixinConfigs: mcuniversal.mixins.json
 

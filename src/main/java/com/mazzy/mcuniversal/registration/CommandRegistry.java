@@ -4,6 +4,8 @@ import com.mazzy.mcuniversal.McUniversal;
 import com.mazzy.mcuniversal.core.command.TestCommand;
 import com.mazzy.mcuniversal.core.command.ExtraSpawnCommand;
 import com.mazzy.mcuniversal.core.command.CheckExtraSpawnCommand;
+// Import your new command class
+import com.mazzy.mcuniversal.core.command.RTPDimensionCommands;
 
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -18,11 +20,10 @@ public class CommandRegistry {
 
         // Register existing commands
         TestCommand.register(dispatcher);
-
-        // Register any other commands
         dispatcher.register(ExtraSpawnCommand.register());
-
-        // Now also register "CheckExtraSpawnCommand"
         dispatcher.register(CheckExtraSpawnCommand.register());
+
+        // Register the commands for locking/unlocking RTP dimensions
+        RTPDimensionCommands.registerCommands(dispatcher);
     }
 }
