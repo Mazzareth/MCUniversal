@@ -1,13 +1,21 @@
+/*******************************************************************************
+ * DimensionalAmuletScreen.java
+ ******************************************************************************/
 package com.mazzy.mcuniversal.core.screen;
 
+import com.mazzy.mcuniversal.config.DimensionConfig;
+import com.mazzy.mcuniversal.network.DimensionalAmuletActionPacket;
+import com.mazzy.mcuniversal.network.DimensionalAmuletActionPacket.Action;
+import com.mazzy.mcuniversal.network.NetworkHandler;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.Level;
 
-import com.mazzy.mcuniversal.network.DimensionalAmuletActionPacket;
-import com.mazzy.mcuniversal.network.DimensionalAmuletActionPacket.Action;
-import com.mazzy.mcuniversal.network.NetworkHandler;
+import java.util.List;
 
 public class DimensionalAmuletScreen extends Screen {
 
@@ -20,7 +28,10 @@ public class DimensionalAmuletScreen extends Screen {
     private int guiTop;
 
     // Track the current section
-    private int currentSection = 0; // 0 = My Nation, 1 = Teleports, 2 = Public Waypoints
+    private int currentSection = 0; // 0 = My Nation, 1 = Teleports, ...
+
+    // Matches the dimension ID for "mcuniversal:extra"
+    private static final ResourceLocation EXTRA_DIM_ID = new ResourceLocation("mcuniversal", "extra");
 
     public DimensionalAmuletScreen() {
         // Pass an empty component to avoid any inherited titles
@@ -58,77 +69,83 @@ public class DimensionalAmuletScreen extends Screen {
                 }).pos(guiLeft + 80, guiTop + 10).size(60, 20).build()
         );
 
-        this.addRenderableWidget(
-                Button.builder(Component.literal("Waypoints"), btn -> {
-                    currentSection = 2;
-                    rebuildSection();
-                }).pos(guiLeft + 150, guiTop + 10).size(60, 20).build()
-        );
-
         // Add widgets for the chosen section
         switch (currentSection) {
             case 0 -> initMyNationButtons();
             case 1 -> initTeleportButtons();
-            case 2 -> initWaypointButtons();
         }
     }
 
-    // ---------- My Nation Section ----------
     private void initMyNationButtons() {
-        this.addRenderableWidget(
-                Button.builder(Component.literal("Set Home"), btn -> {
-                    // Send the "SET_HOME" action to the server
-                    NetworkHandler.sendToServer(new DimensionalAmuletActionPacket(Action.SET_HOME));
-                }).pos(guiLeft + 15, guiTop + 40).size(70, 20).build()
-        );
+        // "Set Home" button
+        Button setHomeButton = Button.builder(Component.literal("Set Home"), btn -> {
+            // Send the "SET_HOME" action to the server
+            NetworkHandler.sendToServer(new DimensionalAmuletActionPacket(Action.SET_HOME));
+        }).pos(guiLeft + 15, guiTop + 40).size(70, 20).build();
+        // Disable it if we’re not in the correct dimension
+        setHomeButton.active = isInExtraDimension();
+        this.addRenderableWidget(setHomeButton);
 
-        this.addRenderableWidget(
-                Button.builder(Component.literal("TP Home"), btn -> {
-                    // Send the "TELEPORT_HOME" action
-                    NetworkHandler.sendToServer(new DimensionalAmuletActionPacket(Action.TELEPORT_HOME));
-                }).pos(guiLeft + 15, guiTop + 65).size(70, 20).build()
-        );
+        // "TP Home" button
+        Button tpHomeButton = Button.builder(Component.literal("TP Home"), btn -> {
+            // Send the "TELEPORT_HOME" action
+            NetworkHandler.sendToServer(new DimensionalAmuletActionPacket(Action.TELEPORT_HOME));
+        }).pos(guiLeft + 15, guiTop + 65).size(70, 20).build();
+        this.addRenderableWidget(tpHomeButton);
 
-        this.addRenderableWidget(
-                Button.builder(Component.literal("Set Name"), btn -> {
-                    // Example: pass new name as a string to the server
-                    NetworkHandler.sendToServer(new DimensionalAmuletActionPacket(Action.SET_NATION_NAME, "MyNation"));
-                }).pos(guiLeft + 15, guiTop + 90).size(70, 20).build()
-        );
+        // "Set Name" button
+        Button setNameButton = Button.builder(Component.literal("Set Name"), btn -> {
+            // Example: pass new name as a string to the server
+            NetworkHandler.sendToServer(new DimensionalAmuletActionPacket(Action.SET_NATION_NAME, "MyNation"));
+        }).pos(guiLeft + 15, guiTop + 90).size(70, 20).build();
+        this.addRenderableWidget(setNameButton);
     }
 
-    // ---------- Teleports Section ----------
+    /**
+     * In this method, we dynamically create a button for each whitelisted dimension.
+     * On click, we send a new action "RANDOM_TP_DIM" with the dimension ID.
+     */
     private void initTeleportButtons() {
-        this.addRenderableWidget(
-                Button.builder(Component.literal("Rand Warp"), btn -> {
-                    NetworkHandler.sendToServer(new DimensionalAmuletActionPacket(Action.RAND_WARP));
-                }).pos(guiLeft + 15, guiTop + 40).size(80, 20).build()
-        );
+        // Read dimension whitelist from config
+        List<? extends String> dims = DimensionConfig.SERVER.dimensionWhitelist.get();
 
+        int yOffset = 40;
+        int buttonHeight = 20;
+        int spacing = 5;
+
+        for (String dimId : dims) {
+            // Create a button for each dimension
+            Button btn = Button.builder(Component.literal("Rand TP " + dimId), b -> {
+                // Send a new packet specifying which dimension to random-TP into
+                NetworkHandler.sendToServer(
+                        new DimensionalAmuletActionPacket(Action.RANDOM_TP_DIM, dimId)
+                );
+            }).pos(guiLeft + 15, guiTop + yOffset).size(120, buttonHeight).build();
+
+            this.addRenderableWidget(btn);
+            yOffset += (buttonHeight + spacing);
+        }
+
+        // Optionally: keep an original “Rand Warp” if you want to preserve the old Overworld-only approach:
+        /*
         this.addRenderableWidget(
-                Button.builder(Component.literal("TP Earth"), btn -> {
-                    NetworkHandler.sendToServer(new DimensionalAmuletActionPacket(Action.TP_EARTH));
-                }).pos(guiLeft + 15, guiTop + 65).size(70, 20).build()
+                Button.builder(Component.literal("Rand Warp (Overworld)"), btn -> {
+                    NetworkHandler.sendToServer(new DimensionalAmuletActionPacket(Action.RAND_WARP));
+                }).pos(guiLeft + 150, guiTop + 40).size(100, 20).build()
         );
+        */
     }
 
-    // ---------- Public Waypoints Section ----------
-    private void initWaypointButtons() {
-        // In your real usage, these will invoke "GlobalWaypointsPacket"
-        // For example:
-        //   NetworkHandler.sendToServer(new GlobalWaypointsPacket(
-        //       GlobalWaypointsPacket.WaypointAction.CREATE, "MyPublicWP"));
-        // This is just a placeholder for demonstration.
-        this.addRenderableWidget(
-                Button.builder(Component.literal("Create WP"), btn -> {
-                    // Example usage with new GlobalWaypointsPacket
-                    // NetworkHandler.sendToServer(
-                    //     new GlobalWaypointsPacket(WaypointAction.CREATE, "PublicWP")
-                    // );
-                }).pos(guiLeft + 15, guiTop + 40).size(80, 20).build()
-        );
-
-        // Additional logic would iterate through existing waypoints, etc.
+    /**
+     * Check if the client player is in the "mcuniversal:extra" dimension.
+     */
+    private boolean isInExtraDimension() {
+        var mc = Minecraft.getInstance();
+        if (mc.player == null) {
+            return false;
+        }
+        Level clientLevel = mc.player.level();
+        return clientLevel.dimension().location().equals(EXTRA_DIM_ID);
     }
 
     @Override
@@ -142,23 +159,17 @@ public class DimensionalAmuletScreen extends Screen {
         int lineY = guiTop + 35;
         guiGraphics.fill(guiLeft, lineY, guiLeft + xSize, lineY + 1, 0xFFFFFFFF);
 
-        // Draw a background color for each section
+        // Area background
         switch (currentSection) {
-            case 0 -> {
-                // My Nation: Lighter gray
+            case 0 -> { // My Nation
                 guiGraphics.fill(guiLeft + 1, lineY + 1, guiLeft + xSize - 1, guiTop + ySize - 1, 0xFF4B4B4B);
             }
-            case 1 -> {
-                // Teleports: Slightly greenish tint
+            case 1 -> { // Teleports
                 guiGraphics.fill(guiLeft + 1, lineY + 1, guiLeft + xSize - 1, guiTop + ySize - 1, 0xFF4B5F4B);
-            }
-            case 2 -> {
-                // Waypoints: Slightly bluish tint
-                guiGraphics.fill(guiLeft + 1, lineY + 1, guiLeft + xSize - 1, guiTop + ySize - 1, 0xFF3E4B5F);
             }
         }
 
-        // Render the buttons (and other UI elements)
+        // Render the buttons
         super.render(guiGraphics, mouseX, mouseY, partialTicks);
     }
 

@@ -134,6 +134,7 @@ Adding Libraries to Inheritance
 Reading Input: C:\dev\MCUniversal\build\libs\mcuniversal-1.0-SNAPSHOT.jar
 Adding input to inheritance map
 Processing entries
+Conflicting propagated mapping for com/mazzy/mcuniversal/data/ExtraSpawnsSavedData/save(Lnet/minecraft/nbt/CompoundTag;)Lnet/minecraft/nbt/CompoundTag; from net/minecraft/world/level/saveddata/SavedData/save(Lnet/minecraft/nbt/CompoundTag;)Lnet/minecraft/nbt/CompoundTag;: save -> m_7176_
 Conflicting propagated mapping for com/mazzy/mcuniversal/core/screen/DimensionalAmuletScreen/isPauseScreen()Z from net/minecraft/client/gui/screens/Screen/isPauseScreen()Z: isPauseScreen -> m_7043_
 Conflicting propagated mapping for com/mazzy/mcuniversal/core/screen/DimensionalAmuletScreen/render(Lnet/minecraft/client/gui/GuiGraphics;IIF)V from net/minecraft/client/gui/screens/Screen/render(Lnet/minecraft/client/gui/GuiGraphics;IIF)V: render -> m_88315_
 Conflicting propagated mapping for com/mazzy/mcuniversal/core/screen/DimensionalAmuletScreen/init()V from net/minecraft/client/gui/screens/Screen/init()V: init -> m_7856_
@@ -165,6 +166,8 @@ Writing Output: C:\dev\MCUniversal\build\reobfJar\output.jar
   com/mazzy/mcuniversal/core/client/
   com/mazzy/mcuniversal/core/client/ClientMethods.class
   com/mazzy/mcuniversal/core/command/
+  com/mazzy/mcuniversal/core/command/CheckExtraSpawnCommand.class
+  com/mazzy/mcuniversal/core/command/ExtraSpawnCommand.class
   com/mazzy/mcuniversal/core/command/TestCommand.class
   com/mazzy/mcuniversal/core/data/
   com/mazzy/mcuniversal/core/data/HomeManager.class
@@ -179,9 +182,21 @@ Writing Output: C:\dev\MCUniversal\build\reobfJar\output.jar
   com/mazzy/mcuniversal/core/teleportation/
   com/mazzy/mcuniversal/core/teleportation/TeleportationUnlockManager.class
   com/mazzy/mcuniversal/core/teleportation/TeleportationUtils.class
+  com/mazzy/mcuniversal/data/
+  com/mazzy/mcuniversal/data/ExtraSpawnsSavedData$SpawnEntry.class
+  com/mazzy/mcuniversal/data/ExtraSpawnsSavedData.class
   com/mazzy/mcuniversal/event/
+  com/mazzy/mcuniversal/event/OverworldBedExplosionHandler.class
+  com/mazzy/mcuniversal/event/OverworldReturnManager.class
+  com/mazzy/mcuniversal/event/PlayerSpawnHandler.class
   com/mazzy/mcuniversal/event/ServerEvents.class
   com/mazzy/mcuniversal/network/
+  com/mazzy/mcuniversal/network/DimensionalAmuletActionPacket$1.class
+  com/mazzy/mcuniversal/network/DimensionalAmuletActionPacket$Action.class
+  com/mazzy/mcuniversal/network/DimensionalAmuletActionPacket.class
+  com/mazzy/mcuniversal/network/GlobalWaypointsPacket$1.class
+  com/mazzy/mcuniversal/network/GlobalWaypointsPacket$WaypointAction.class
+  com/mazzy/mcuniversal/network/GlobalWaypointsPacket.class
   com/mazzy/mcuniversal/network/NetworkHandler.class
   com/mazzy/mcuniversal/network/OpenDimensionalAmuletPacket.class
   com/mazzy/mcuniversal/registration/

@@ -1,3 +1,6 @@
+/*******************************************************************************
+ * McUniversal.java
+ ******************************************************************************/
 package com.mazzy.mcuniversal;
 
 import com.mazzy.mcuniversal.config.DimensionConfig;
@@ -22,13 +25,13 @@ public class McUniversal {
         // Access the mod-specific event bus
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
 
-        // Register your configuration settings
+        // Register your configuration settings (SERVER config in this example)
         ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, DimensionConfig.SERVER_SPEC);
 
-        // Register custom items or other mod-specific objects to the mod event bus
+        // Register custom items (or other objects) to the mod event bus
         RegistryHandler.ITEMS.register(modEventBus);
 
-        // Register on the global event bus if needed to handle common game events
+        // Register on the global Forge event bus, if needed
         MinecraftForge.EVENT_BUS.register(this);
 
         // Register your network packets

@@ -1,3 +1,6 @@
+/*******************************************************************************
+ * RegistryHandler.java
+ ******************************************************************************/
 package com.mazzy.mcuniversal.registration;
 
 import com.mazzy.mcuniversal.McUniversal;
@@ -13,7 +16,9 @@ public class RegistryHandler {
     public static final DeferredRegister<Item> ITEMS =
             DeferredRegister.create(ForgeRegistries.ITEMS, McUniversal.MODID);
 
+    // The Dimensional Amulet item
     public static final RegistryObject<Item> DIMENSIONAL_AMULET =
             ITEMS.register("dimensional_amulet", DimensionalAmuletItem::new);
 
+    // No additional changes needed here unless you want to register more items
 }
