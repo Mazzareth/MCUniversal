@@ -13,9 +13,11 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkStatus;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.List;
@@ -29,7 +31,7 @@ public class DimensionalAmuletActionPacket {
         TELEPORT_HOME,
         SET_NATION_NAME,
         RAND_WARP,
-        RANDOM_TP_DIM // <-- Random-TP into a specified dimension
+        RANDOM_TP_DIM
     }
 
     private final Action action;
@@ -190,16 +192,13 @@ public class DimensionalAmuletActionPacket {
     }
 
     /**
-     * Randomly teleports the player within the given dimension, but caps
-     * the search height at Y=127 if it's the Nether ("minecraft:the_nether").
-     *
-     * Scans from top to bottom in each chunk, looking for:
-     *   - A solid block (not fluid)
-     *   - Two open (air/fluid-free) blocks above
+     * Randomly teleports the player within the given dimension while avoiding bedrock roofs,
+     * using level.getHeight(...) to quickly get the terrain’s surface. The method then scans a small
+     * range downward to ensure a safe, non-bedrock spot with two air blocks above.
      */
     private static void randomTeleportInDimension(ServerPlayer player, ServerLevel level, String dimensionId) {
         Random random = new Random();
-        int maxAttempts = 50;
+        int maxAttempts = 10;
         int range = 100000;
         boolean success = false;
 
@@ -207,46 +206,57 @@ public class DimensionalAmuletActionPacket {
             int x = random.nextInt(range * 2 + 1) - range;
             int z = random.nextInt(range * 2 + 1) - range;
 
+            // Force chunk to load/generate so getHeight() can work properly
             ChunkAccess chunk = level.getChunk(x >> 4, z >> 4, ChunkStatus.FULL, true);
             if (chunk == null) {
                 continue;
             }
 
-            // Adjust topY if dimension is Nether to ensure we stay below Y=128
-            int topY = chunk.getMaxBuildHeight();
+            // Get terrain surface Y from the level:
+            int surfaceY = level.getHeight(Heightmap.Types.WORLD_SURFACE, x, z);
+
+            // If this dimension is the Nether, clamp Y to avoid going above the bedrock roof
             if ("minecraft:the_nether".equals(dimensionId)) {
-                // Cap topY at 120 or so to avoid going into the roof
-                topY = Math.min(topY, 120);
+                surfaceY = Math.min(surfaceY, 120);
             }
 
             int bottomY = chunk.getMinBuildHeight();
+            if (surfaceY <= bottomY) {
+                // If surfaceY ended up below or equal to the chunk's min, skip
+                continue;
+            }
+
+            // We'll only scan up to 10 blocks below that surface
+            int scanEnd = Math.max(surfaceY - 10, bottomY);
 
             BlockPos foundPos = null;
-            // Scan from just below the top, down to chunk's minimum
-            for (int scanY = topY - 1; scanY > bottomY; scanY--) {
+            for (int scanY = surfaceY; scanY >= scanEnd; scanY--) {
                 BlockPos groundPos = new BlockPos(x, scanY, z);
                 BlockState groundState = level.getBlockState(groundPos);
 
-                if (!groundState.getFluidState().isEmpty() || !groundState.isSolid()) {
+                // Skip if bedrock, not solid, or if it has fluid
+                if (groundState.is(Blocks.BEDROCK) || !groundState.isSolid() || !groundState.getFluidState().isEmpty()) {
                     continue;
                 }
 
-                BlockPos airPos1 = groundPos.above(1);
+                // We need two air blocks above the ground
+                BlockPos airPos1 = groundPos.above();
                 BlockPos airPos2 = groundPos.above(2);
                 BlockState state1 = level.getBlockState(airPos1);
                 BlockState state2 = level.getBlockState(airPos2);
 
-                if (!state1.isAir() || !state2.isAir()) {
-                    continue;
+                if (state1.isAir() && state2.isAir()) {
+                    foundPos = airPos1;
+                    break;
                 }
-
-                foundPos = airPos1;
-                break;
             }
 
             if (foundPos == null) {
+                // Not suitable, continue
                 continue;
             }
+
+            // Teleport once a valid spot is located
             player.teleportTo(
                     level,
                     foundPos.getX() + 0.5D,
@@ -256,7 +266,7 @@ public class DimensionalAmuletActionPacket {
                     player.getXRot()
             );
 
-            // Set skipOverworldReturn if Overworld
+            // Set skipOverworldReturn if the dimension is Overworld
             if ("minecraft:overworld".equals(dimensionId)) {
                 player.getPersistentData().putBoolean("mcuniversal:skipOverworldReturn", true);
             }
