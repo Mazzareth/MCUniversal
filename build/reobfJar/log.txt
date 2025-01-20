@@ -134,9 +134,8 @@ Adding Libraries to Inheritance
 Reading Input: C:\dev\MCUniversal\build\libs\mcuniversal-0.1.0.jar
 Adding input to inheritance map
 Processing entries
-Conflicting propagated mapping for com/mazzy/mcuniversal/data/ExtraSpawnsSavedData/save(Lnet/minecraft/nbt/CompoundTag;)Lnet/minecraft/nbt/CompoundTag; from net/minecraft/world/level/saveddata/SavedData/save(Lnet/minecraft/nbt/CompoundTag;)Lnet/minecraft/nbt/CompoundTag;: save -> m_7176_
 Conflicting propagated mapping for com/mazzy/mcuniversal/data/NationsSavedData/save(Lnet/minecraft/nbt/CompoundTag;)Lnet/minecraft/nbt/CompoundTag; from net/minecraft/world/level/saveddata/SavedData/save(Lnet/minecraft/nbt/CompoundTag;)Lnet/minecraft/nbt/CompoundTag;: save -> m_7176_
-Conflicting propagated mapping for com/mazzy/mcuniversal/data/RTPDimensionData/save(Lnet/minecraft/nbt/CompoundTag;)Lnet/minecraft/nbt/CompoundTag; from net/minecraft/world/level/saveddata/SavedData/save(Lnet/minecraft/nbt/CompoundTag;)Lnet/minecraft/nbt/CompoundTag;: save -> m_7176_
+Conflicting propagated mapping for com/mazzy/mcuniversal/data/ExtraSpawnsSavedData/save(Lnet/minecraft/nbt/CompoundTag;)Lnet/minecraft/nbt/CompoundTag; from net/minecraft/world/level/saveddata/SavedData/save(Lnet/minecraft/nbt/CompoundTag;)Lnet/minecraft/nbt/CompoundTag;: save -> m_7176_
 Conflicting propagated mapping for com/mazzy/mcuniversal/core/screen/DimensionalAmuletScreen/keyPressed(III)Z from net/minecraft/client/gui/screens/Screen/keyPressed(III)Z: keyPressed -> m_7933_
 Conflicting propagated mapping for com/mazzy/mcuniversal/core/screen/DimensionalAmuletScreen/isPauseScreen()Z from net/minecraft/client/gui/screens/Screen/isPauseScreen()Z: isPauseScreen -> m_7043_
 Conflicting propagated mapping for com/mazzy/mcuniversal/core/screen/DimensionalAmuletScreen/render(Lnet/minecraft/client/gui/GuiGraphics;IIF)V from net/minecraft/client/gui/screens/Screen/render(Lnet/minecraft/client/gui/GuiGraphics;IIF)V: render -> m_88315_
@@ -179,9 +178,6 @@ Writing Output: C:\dev\MCUniversal\build\reobfJar\output.jar
   com/mazzy/mcuniversal/core/item/DimensionalAmuletItem.class
   com/mazzy/mcuniversal/core/screen/
   com/mazzy/mcuniversal/core/screen/DimensionalAmuletScreen.class
-  com/mazzy/mcuniversal/core/teleportation/
-  com/mazzy/mcuniversal/core/teleportation/TeleportationUnlockManager.class
-  com/mazzy/mcuniversal/core/teleportation/TeleportationUtils.class
   com/mazzy/mcuniversal/data/
   com/mazzy/mcuniversal/data/ExtraSpawnsSavedData$SpawnEntry.class
   com/mazzy/mcuniversal/data/ExtraSpawnsSavedData.class
@@ -191,13 +187,11 @@ Writing Output: C:\dev\MCUniversal\build\reobfJar\output.jar
   com/mazzy/mcuniversal/data/PlayerDimensionData.class
   com/mazzy/mcuniversal/data/PlayerDimensionDataProvider$1.class
   com/mazzy/mcuniversal/data/PlayerDimensionDataProvider.class
-  com/mazzy/mcuniversal/data/RTPDimensionData.class
   com/mazzy/mcuniversal/event/
   com/mazzy/mcuniversal/event/CapabilityEventHandler.class
   com/mazzy/mcuniversal/event/ChatMessageHandler.class
   com/mazzy/mcuniversal/event/OverworldBedExplosionHandler.class
   com/mazzy/mcuniversal/event/OverworldReturnManager.class
-  com/mazzy/mcuniversal/event/PlayerDimensionDataEvents.class
   com/mazzy/mcuniversal/event/PlayerSpawnHandler.class
   com/mazzy/mcuniversal/event/ServerEvents.class
   com/mazzy/mcuniversal/network/
@@ -209,6 +203,7 @@ Writing Output: C:\dev\MCUniversal\build\reobfJar\output.jar
   com/mazzy/mcuniversal/network/GlobalWaypointsPacket.class
   com/mazzy/mcuniversal/network/NetworkHandler.class
   com/mazzy/mcuniversal/network/OpenDimensionalAmuletPacket.class
+  com/mazzy/mcuniversal/network/SyncDimensionalDataPacket.class
   com/mazzy/mcuniversal/registration/
   com/mazzy/mcuniversal/registration/CommandRegistry.class
   com/mazzy/mcuniversal/registration/RegistryHandler.class

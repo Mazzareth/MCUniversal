@@ -10,7 +10,7 @@ import com.mazzy.mcuniversal.core.client.ClientMethods;
 
 /**
  * Packet to instruct the client to open the DimensionalAmuletScreen
- * and also provide the unlocked dimension IDs for the local player.
+ * and provide the unlocked dimension IDs for the local player.
  */
 public class OpenDimensionalAmuletPacket {
 
@@ -25,7 +25,6 @@ public class OpenDimensionalAmuletPacket {
 
     /**
      * Empty constructor for network framework only.
-     * Do not use directly.
      */
     public OpenDimensionalAmuletPacket() {
         this.unlockedDimensions = new ArrayList<>();
@@ -39,9 +38,7 @@ public class OpenDimensionalAmuletPacket {
     // Encoding: write data to buffer
     // ------------------------------------------------------------------------
     public static void encode(OpenDimensionalAmuletPacket packet, FriendlyByteBuf buf) {
-        // Write the size of our list first
         buf.writeInt(packet.unlockedDimensions.size());
-        // Write each dimension ID
         for (String dimId : packet.unlockedDimensions) {
             buf.writeUtf(dimId);
         }
@@ -68,8 +65,7 @@ public class OpenDimensionalAmuletPacket {
             return;
         }
         ctx.enqueueWork(() -> {
-            // Pass the dimension list to the client method,
-            // and let it open the GUI with the correct data.
+            // Open the GUI with the unlocked dimension IDs
             ClientMethods.openDimensionalAmuletScreen(packet.getUnlockedDimensions());
         });
         ctx.setPacketHandled(true);

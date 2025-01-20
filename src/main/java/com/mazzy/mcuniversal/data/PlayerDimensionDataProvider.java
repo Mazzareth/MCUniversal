@@ -2,14 +2,8 @@ package com.mazzy.mcuniversal.data;
 
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.CapabilityManager;
-import net.minecraftforge.common.capabilities.CapabilityToken;
-import net.minecraftforge.common.capabilities.ICapabilityProvider;
+import net.minecraftforge.common.capabilities.*;
 import net.minecraftforge.common.util.LazyOptional;
-
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -17,7 +11,7 @@ import javax.annotation.Nullable;
  * Capability provider that attaches PlayerDimensionData to Player entities.
  * Also handles serialization and deserialization.
  */
-public class PlayerDimensionDataProvider implements ICapabilityProvider {
+public class PlayerDimensionDataProvider implements ICapabilityProvider, ICapabilitySerializable<CompoundTag> {
     // Register (or retrieve) your capability reference.
     public static final Capability<IPlayerDimensionData> PLAYER_DIMENSION_DATA =
             CapabilityManager.get(new CapabilityToken<>() {});
@@ -34,16 +28,20 @@ public class PlayerDimensionDataProvider implements ICapabilityProvider {
     }
 
     /**
-     * Saves the player’s dimension data to an NBT tag
+     * Saves the player's dimension data to an NBT tag
      * so it can be written to the player's data file.
+     * (Forge calls this automatically once it's an ICapabilitySerializable.)
      */
+    @Override
     public CompoundTag serializeNBT() {
         return backend.saveNBTData();
     }
 
     /**
-     * Loads the player’s dimension data from NBT when the world (or player) data is read.
+     * Loads the player's dimension data from NBT when the world/player data is read.
+     * (Forge calls this automatically once it's an ICapabilitySerializable.)
      */
+    @Override
     public void deserializeNBT(CompoundTag nbt) {
         backend.loadNBTData(nbt);
     }

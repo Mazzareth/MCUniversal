@@ -1,10 +1,10 @@
 package com.mazzy.mcuniversal.core.item;
 
 import com.mazzy.mcuniversal.network.NetworkHandler;
-import com.mazzy.mcuniversal.network.OpenDimensionalAmuletPacket;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -23,22 +23,19 @@ public class DimensionalAmuletItem extends Item {
     }
 
     @Override
-    public InteractionResultHolder<ItemStack> use(Level level, net.minecraft.world.entity.player.Player player, InteractionHand hand) {
-        // Log to confirm it’s being used
+    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         LOGGER.info("DimensionalAmuletItem right-clicked.");
 
         // Check if we’re on the server side
         if (!level.isClientSide()) {
             if (player instanceof ServerPlayer serverPlayer) {
-                // Log to confirm packet is about to be sent
-                LOGGER.info("Sending OpenDimensionalAmuletPacket to player {}.", serverPlayer.getName().getString());
+                LOGGER.info("Opening Amulet Screen for player {} with up-to-date dimension data.",
+                        serverPlayer.getName().getString());
 
-                // Send the packet to the player
-                NetworkHandler.sendToPlayer(new OpenDimensionalAmuletPacket(), serverPlayer);
+                // Updated fix: send the full dimension list every time
+                NetworkHandler.openAmuletScreenForPlayer(serverPlayer);
             }
         }
-
-        // Return success to allow further processing (like animations)
         return InteractionResultHolder.success(player.getItemInHand(hand));
     }
 }

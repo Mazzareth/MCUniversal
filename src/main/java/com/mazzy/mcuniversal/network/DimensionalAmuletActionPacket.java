@@ -104,14 +104,12 @@ public class DimensionalAmuletActionPacket {
 
                     pData.putLong("mcuniversal:lastSetHomeTime", currentTime);
 
-                    // Store home coords
                     BlockPos pos = player.blockPosition();
                     pData.putInt("mcuniversal:homeX", pos.getX());
                     pData.putInt("mcuniversal:homeY", pos.getY());
                     pData.putInt("mcuniversal:homeZ", pos.getZ());
                     pData.putString("mcuniversal:homeDim", EARTH_DIM_LOCATION.toString());
 
-                    // Also set official spawn point
                     ServerLevel earthDim = server.getLevel(EARTH_DIM_KEY);
                     if (earthDim != null) {
                         player.setRespawnPosition(
@@ -162,13 +160,11 @@ public class DimensionalAmuletActionPacket {
                 }
 
                 case SET_NATION_NAME -> {
-                    // 'packet.data' will contain the user-input string from the client.
                     String nationName = packet.data;
                     player.sendSystemMessage(Component.literal("Nation name set to: " + nationName));
                 }
 
                 case RAND_WARP -> {
-                    // Default random warp is Overworld
                     ServerLevel overworld = server.getLevel(Level.OVERWORLD);
                     if (overworld == null) {
                         player.sendSystemMessage(Component.literal("Overworld not found!"));
@@ -178,24 +174,13 @@ public class DimensionalAmuletActionPacket {
                 }
 
                 case RANDOM_TP_DIM -> {
-                    // We want only Overworld and Nether by default (or those in dimensionWhitelist).
                     String dimId = packet.data;
-                    List<? extends String> allowed = DimensionConfig.SERVER.dimensionWhitelist.get();
-                    if (!allowed.contains(dimId)) {
-                        player.sendSystemMessage(Component.literal(
-                                "Dimension " + dimId + " is not in the random teleport whitelist."
-                        ));
-                        return;
-                    }
-
-                    ResourceKey<Level> targetKey =
-                            ResourceKey.create(Registries.DIMENSION, new ResourceLocation(dimId));
+                    ResourceKey<Level> targetKey = ResourceKey.create(Registries.DIMENSION, new ResourceLocation(dimId));
                     ServerLevel targetLevel = server.getLevel(targetKey);
                     if (targetLevel == null) {
                         player.sendSystemMessage(Component.literal("Could not find dimension: " + dimId));
                         return;
                     }
-
                     randomTeleportInDimension(player, targetLevel, dimId);
                 }
             }
@@ -242,12 +227,10 @@ public class DimensionalAmuletActionPacket {
                 BlockPos groundPos = new BlockPos(x, scanY, z);
                 BlockState groundState = level.getBlockState(groundPos);
 
-                // Ground must be solid, no fluid
                 if (!groundState.getFluidState().isEmpty() || !groundState.isSolid()) {
                     continue;
                 }
 
-                // Check the two blocks above are empty (air/fluid-free)
                 BlockPos airPos1 = groundPos.above(1);
                 BlockPos airPos2 = groundPos.above(2);
                 BlockState state1 = level.getBlockState(airPos1);
@@ -264,8 +247,6 @@ public class DimensionalAmuletActionPacket {
             if (foundPos == null) {
                 continue;
             }
-
-            // Teleport the player
             player.teleportTo(
                     level,
                     foundPos.getX() + 0.5D,

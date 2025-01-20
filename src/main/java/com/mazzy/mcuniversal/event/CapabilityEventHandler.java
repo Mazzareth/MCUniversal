@@ -1,6 +1,6 @@
 package com.mazzy.mcuniversal.event;
 
-import com.mazzy.mcuniversal.McUniversal; // <-- Replace with your actual main-mod class or remove if not needed
+import com.mazzy.mcuniversal.McUniversal;
 import com.mazzy.mcuniversal.data.IPlayerDimensionData;
 import com.mazzy.mcuniversal.data.PlayerDimensionDataProvider;
 import net.minecraft.resources.ResourceLocation;

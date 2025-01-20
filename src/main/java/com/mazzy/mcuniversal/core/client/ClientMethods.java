@@ -13,7 +13,7 @@ public class ClientMethods {
 
     /**
      * Opens the DimensionalAmuletScreen with no dimension list.
-     * (Kept for backward compatibility, or if no data is provided.)
+     * (Kept for backward compatibility or if no data is provided.)
      */
     public static void openDimensionalAmuletScreen() {
         openDimensionalAmuletScreen(new ArrayList<>());
