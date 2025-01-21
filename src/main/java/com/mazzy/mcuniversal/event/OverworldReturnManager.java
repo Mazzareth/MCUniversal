@@ -22,39 +22,24 @@ public class OverworldReturnManager {
 
     @SubscribeEvent
     public static void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
-        // Ensure we're on a server and the player is valid
-        if (!(event.getEntity() instanceof ServerPlayer player)) {
-            return;
-        }
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
 
-        // If the dimension they arrived in is Overworld, check if we should skip
-        if (Level.OVERWORLD.equals(event.getTo())) {
-            // Read the skip flag from the player's persistent data
+        if (event.getTo().equals(Level.OVERWORLD)) {
             var pData = player.getPersistentData();
-            boolean skipThisTime = pData.getBoolean("mcuniversal:skipOverworldReturn");
+            boolean skipThisTime = pData.contains("mcuniversal:skipOverworldReturn");
 
             if (skipThisTime) {
-                // Clear the flag and do nothing this time
-                pData.remove("mcuniversal:skipOverworldReturn");
+                pData.remove("mcuniversal:skipOverworldReturn");  // Clear only AFTER confirming existence
                 return;
             }
 
-            // The usual path: Teleport them to their spawn if not skipping
-            var spawnDimensionKey = player.getRespawnDimension();
-            ServerLevel spawnLevel = player.server.getLevel(spawnDimensionKey);
-            if (spawnLevel == null) {
-                // Fallback: If their spawn dimension isn't found for some reason, default to Overworld.
-                spawnLevel = player.server.getLevel(Level.OVERWORLD);
-            }
+            // Existing teleport logic
+            ServerLevel spawnLevel = player.server.getLevel(player.getRespawnDimension());
+            if (spawnLevel == null) spawnLevel = player.server.getLevel(Level.OVERWORLD);
 
-            // Retrieve the exact BlockPos of their spawn
             BlockPos spawnPos = player.getRespawnPosition();
-            if (spawnPos == null) {
-                // If no bed or specific spawn is set, default to world spawn
-                spawnPos = spawnLevel.getSharedSpawnPos();
-            }
+            if (spawnPos == null) spawnPos = spawnLevel.getSharedSpawnPos();
 
-            // Teleport them to the determined spawn
             player.teleportTo(
                     spawnLevel,
                     spawnPos.getX() + 0.5D,
