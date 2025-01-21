@@ -1,26 +1,21 @@
 package com.mazzy.mcuniversal.network;
 
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
-/**
- * Sent from the server to the client to sync player's unlocked dimension IDs.
- */
 public class SyncDimensionalDataPacket {
-
     private final List<String> unlockedDimensions;
 
     public SyncDimensionalDataPacket(List<String> unlockedDimensions) {
         this.unlockedDimensions = unlockedDimensions;
     }
 
-    /**
-     * Decode constructor: used to create an instance from the buffer data.
-     */
     public static SyncDimensionalDataPacket decode(FriendlyByteBuf buf) {
         int size = buf.readInt();
         List<String> dims = new ArrayList<>(size);
@@ -30,28 +25,28 @@ public class SyncDimensionalDataPacket {
         return new SyncDimensionalDataPacket(dims);
     }
 
-    /**
-     * Write (encode) this packet's data into the buffer.
-     */
     public void encode(FriendlyByteBuf buf) {
         buf.writeInt(unlockedDimensions.size());
-        for (String dim : unlockedDimensions) {
-            buf.writeUtf(dim);
-        }
+        unlockedDimensions.forEach(buf::writeUtf);
     }
 
-    /**
-     * Handle the packet client side: open the screen with the dimension list.
-     */
     public void handle(Supplier<NetworkEvent.Context> ctxSupplier) {
         NetworkEvent.Context ctx = ctxSupplier.get();
-        if (ctx.getDirection().getReceptionSide().isClient()) {
-            ctx.enqueueWork(() -> {
-                net.minecraft.client.Minecraft.getInstance().setScreen(
-                        new com.mazzy.mcuniversal.core.screen.DimensionalAmuletScreen(unlockedDimensions)
-                );
-            });
-        }
+        ctx.enqueueWork(() -> {
+            if (ctx.getDirection().getReceptionSide().isClient()) {
+                ClientHandler.handle(this);
+            }
+        });
         ctx.setPacketHandled(true);
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    private static class ClientHandler {
+        private static void handle(SyncDimensionalDataPacket packet) {
+            // Use fully qualified names to avoid import issues
+            net.minecraft.client.Minecraft.getInstance().setScreen(
+                    new com.mazzy.mcuniversal.core.screen.DimensionalAmuletScreen(packet.unlockedDimensions)
+            );
+        }
     }
 }

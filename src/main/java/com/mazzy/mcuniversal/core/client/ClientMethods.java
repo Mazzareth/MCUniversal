@@ -2,29 +2,25 @@ package com.mazzy.mcuniversal.core.client;
 
 import net.minecraft.client.Minecraft;
 import com.mazzy.mcuniversal.core.screen.DimensionalAmuletScreen;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Static client-side methods (e.g., opening GUI screens).
- */
+@OnlyIn(Dist.CLIENT) // <-- Add this class-level annotation
 public class ClientMethods {
 
-    /**
-     * Opens the DimensionalAmuletScreen with no dimension list.
-     * (Kept for backward compatibility or if no data is provided.)
-     */
+    // Existing methods are good but add individual method annotations
+    @OnlyIn(Dist.CLIENT)
     public static void openDimensionalAmuletScreen() {
         openDimensionalAmuletScreen(new ArrayList<>());
     }
 
-    /**
-     * Opens the DimensionalAmuletScreen with a given list of unlocked dimensions.
-     *
-     * @param unlockedDimensionIds A list of dimension IDs the player has unlocked.
-     */
+    @OnlyIn(Dist.CLIENT)
     public static void openDimensionalAmuletScreen(List<String> unlockedDimensionIds) {
-        Minecraft.getInstance().setScreen(new DimensionalAmuletScreen(unlockedDimensionIds));
+        if (Minecraft.getInstance().screen == null) { // Add null check for safety
+            Minecraft.getInstance().setScreen(new DimensionalAmuletScreen(unlockedDimensionIds));
+        }
     }
 }
