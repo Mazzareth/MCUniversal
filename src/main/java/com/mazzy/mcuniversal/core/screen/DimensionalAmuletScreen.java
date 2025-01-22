@@ -90,14 +90,28 @@ public class DimensionalAmuletScreen extends Screen {
         // Home position controls
         Button setHomeButton = Button.builder(
                 Component.literal("Set Home"),
-                btn -> NetworkHandler.sendToServer(new DimensionalAmuletActionPacket(Action.SET_HOME))
+                btn -> {
+                    // Get the current dimension ID
+                    Minecraft mc = Minecraft.getInstance();
+                    if (mc.player != null) {
+                        ResourceLocation currentDim = mc.player.level().dimension().location();
+                        NetworkHandler.sendToServer(
+                                new DimensionalAmuletActionPacket(Action.SET_HOME, currentDim.toString())
+                        );
+                    }
+                }
         ).pos(guiLeft + 15, guiTop + 40).size(70, 20).build();
-        setHomeButton.active = isInExtraDimension(); // Only active in special dimension
+        setHomeButton.active = isInExtraDimension();
         this.addRenderableWidget(setHomeButton);
 
         Button tpHomeButton = Button.builder(
                 Component.literal("TP Home"),
-                btn -> NetworkHandler.sendToServer(new DimensionalAmuletActionPacket(Action.TELEPORT_HOME))
+                btn -> NetworkHandler.sendToServer(
+                        new DimensionalAmuletActionPacket(
+                                Action.TELEPORT_HOME,
+                                EXTRA_DIM_ID.toString()
+                        )
+                )
         ).pos(guiLeft + 15, guiTop + 65).size(70, 20).build();
         this.addRenderableWidget(tpHomeButton);
 
