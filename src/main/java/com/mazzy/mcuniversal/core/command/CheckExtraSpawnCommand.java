@@ -12,19 +12,28 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 
+/**
+ * Command for checking available spawn points in custom dimension
+ * Requires OP level 2 to prevent abuse
+ */
 public class CheckExtraSpawnCommand {
 
+    // Custom dimension resource identifiers
     private static final ResourceLocation EXTRA_LOCATION = new ResourceLocation("mcuniversal", "extra");
     private static final ResourceKey<Level> EXTRA_DIM_KEY =
             ResourceKey.create(Registries.DIMENSION, EXTRA_LOCATION);
 
+    /**
+     * Registers the command with server
+     * @return Configured command literal
+     */
     public static LiteralArgumentBuilder<CommandSourceStack> register() {
         return Commands.literal("checkextraspawn")
-                .requires(src -> src.hasPermission(2)) // permission level check
+                .requires(src -> src.hasPermission(2)) // Restrict to server operators
                 .executes(ctx -> {
                     CommandSourceStack source = ctx.getSource();
 
-                    // Attempt to retrieve the issuing player
+                    // Validate command executor is a player
                     ServerPlayer player;
                     try {
                         player = source.getPlayerOrException();
@@ -33,14 +42,14 @@ public class CheckExtraSpawnCommand {
                         return 0;
                     }
 
-                    // Retrieve the MCUniversal Extra dimension
+                    // Verify custom dimension exists
                     ServerLevel extraDimension = player.getServer().getLevel(EXTRA_DIM_KEY);
                     if (extraDimension == null) {
                         source.sendFailure(Component.literal("Extra dimension not found."));
                         return 0;
                     }
 
-                    // Peek a free spawn
+                    // Retrieve and display spawn data
                     ExtraSpawnsSavedData data = ExtraSpawnsSavedData.get(extraDimension);
                     var spawnEntry = data.peekFreeSpawn();
                     if (spawnEntry == null) {

@@ -8,18 +8,29 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import java.util.ArrayList;
 import java.util.List;
 
-@OnlyIn(Dist.CLIENT) // <-- Add this class-level annotation
+/**
+ * Client-side GUI handling utilities
+ * Contains methods for managing dimensional amulet interface
+ */
+@OnlyIn(Dist.CLIENT)
 public class ClientMethods {
 
-    // Existing methods are good but add individual method annotations
+    /**
+     * Opens dimensional amulet screen with empty unlocked dimensions list
+     */
     @OnlyIn(Dist.CLIENT)
     public static void openDimensionalAmuletScreen() {
         openDimensionalAmuletScreen(new ArrayList<>());
     }
 
+    /**
+     * Opens dimensional amulet screen with specified unlocked dimensions
+     * @param unlockedDimensionIds List of unlocked dimension IDs to display
+     */
     @OnlyIn(Dist.CLIENT)
     public static void openDimensionalAmuletScreen(List<String> unlockedDimensionIds) {
-        if (Minecraft.getInstance().screen == null) { // Add null check for safety
+        // Only open if no other screen is active to prevent overlap
+        if (Minecraft.getInstance().screen == null) {
             Minecraft.getInstance().setScreen(new DimensionalAmuletScreen(unlockedDimensionIds));
         }
     }

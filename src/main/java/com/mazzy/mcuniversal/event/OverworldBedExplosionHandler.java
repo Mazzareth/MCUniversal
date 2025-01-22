@@ -10,41 +10,53 @@ import net.minecraftforge.event.entity.player.PlayerSleepInBedEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
+/**
+ * Creates dramatic consequences for attempting to sleep in beds within the Overworld.
+ * When players try to sleep in Overworld beds, triggers an explosion and destroys the bed.
+ */
 @Mod.EventBusSubscriber
 public class OverworldBedExplosionHandler {
 
+    /**
+     * Handles bed sleep attempts with explosive results in the Overworld
+     * @param event PlayerSleepInBedEvent containing sleep attempt details
+     */
     @SubscribeEvent
     public static void onPlayerTryingToSleep(PlayerSleepInBedEvent event) {
         Player player = event.getEntity();
+        // Only process server-side events for real players
         if (player == null || player.level().isClientSide()) {
             return;
         }
 
-        // Only explode beds in the Overworld
+        // Restrict explosive beds to Overworld dimension only
         if (player.level().dimension() == Level.OVERWORLD) {
             BlockPos bedPos = event.getPos();
             if (bedPos == null) {
                 return;
             }
 
-            // Cancel normal bed behavior (no sleeping, no respawn point set)
+            // Prevent normal bed functionality
             event.setResult(Player.BedSleepingProblem.NOT_POSSIBLE_HERE);
 
-            // Destroy the bed if it's actually a bed block
             ServerLevel serverLevel = (ServerLevel) player.level();
+            // Remove bed block without item drops if present
             if (serverLevel.getBlockState(bedPos).getBlock() instanceof BedBlock) {
                 serverLevel.destroyBlock(bedPos, false, player);
             }
 
-            // Create an explosion (similar to the Nether bed explosion)
+            // Calculate precise explosion center at bed coordinates
             Vec3 explosionPos = new Vec3(
                     bedPos.getX() + 0.5D,
                     bedPos.getY() + 0.5D,
                     bedPos.getZ() + 0.5D
             );
 
-            // In 1.20.1, the final parameter is Level.ExplosionInteraction,
-            // with valid values like NONE, BLOCK, MOB, or TNT.
+            // Create customized explosion with:
+            // - 5 block radius
+            // - Fire generation
+            // - Block interaction damage
+            // - Special damage source type
             serverLevel.explode(
                     /* entity                */ null,
                     /* damageSource          */ serverLevel.damageSources().badRespawnPointExplosion(explosionPos),

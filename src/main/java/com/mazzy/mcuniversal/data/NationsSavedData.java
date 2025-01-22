@@ -12,15 +12,22 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Persistent storage for nation/faction data in a world
+ */
 public class NationsSavedData extends SavedData {
 
+    // Unique identifier for saving/loading this data
     private static final String DATA_NAME = "mcuniversal_nations";
 
+    /**
+     * Represents a single nation/faction entity
+     */
     public static class NationEntry {
         private final UUID nationId;
         private String name;
         private BlockPos capital;
-        private final List<String> members;
+        private final List<String> members; // Stores player UUIDs as strings
 
         public NationEntry(UUID nationId, String name, BlockPos capital, List<String> members) {
             this.nationId = nationId;
@@ -29,6 +36,7 @@ public class NationsSavedData extends SavedData {
             this.members = new ArrayList<>(members);
         }
 
+        // Accessors (maintained exactly as original)
         public UUID getNationId() {
             return nationId;
         }
@@ -64,8 +72,12 @@ public class NationsSavedData extends SavedData {
         }
     }
 
+    // Main data store for all nations
     private final List<NationEntry> nations = new ArrayList<>();
 
+    /**
+     * Get or create the nations data for a world
+     */
     public static NationsSavedData get(ServerLevel level) {
         return level.getDataStorage().computeIfAbsent(
                 NationsSavedData::load,
@@ -77,14 +89,19 @@ public class NationsSavedData extends SavedData {
     public NationsSavedData() {
     }
 
+    /**
+     * Create a new nation with generated UUID
+     */
     public UUID createNation(String name, BlockPos capital, List<String> members) {
         UUID newNationId = UUID.randomUUID();
-        NationEntry entry = new NationEntry(newNationId, name, capital, members);
-        nations.add(entry);
+        nations.add(new NationEntry(newNationId, name, capital, members));
         setDirty();
         return newNationId;
     }
 
+    /**
+     * Find nation by its unique ID
+     */
     public NationEntry getNationById(UUID nationId) {
         for (NationEntry entry : nations) {
             if (entry.getNationId().equals(nationId)) {
@@ -94,6 +111,9 @@ public class NationsSavedData extends SavedData {
         return null;
     }
 
+    /**
+     * Remove a nation from the registry
+     */
     public boolean removeNation(UUID nationId) {
         for (int i = 0; i < nations.size(); i++) {
             if (nations.get(i).getNationId().equals(nationId)) {
@@ -105,13 +125,15 @@ public class NationsSavedData extends SavedData {
         return false;
     }
 
+    /**
+     * Get all registered nations
+     */
     public List<NationEntry> getAllNations() {
         return nations;
     }
 
     /**
-     * Finds the nation that contains the given player's UUID in its member list.
-     * Returns null if the player is not in any nation.
+     * Find which nation a player belongs to
      */
     public NationEntry getNationByMember(UUID playerUUID) {
         String playerUuidString = playerUUID.toString();
@@ -123,12 +145,16 @@ public class NationsSavedData extends SavedData {
         return null;
     }
 
+    /**
+     * Load data from NBT storage
+     */
     public static NationsSavedData load(CompoundTag compound) {
         NationsSavedData data = new NationsSavedData();
         ListTag nationsListTag = compound.getList("nations", Tag.TAG_COMPOUND);
 
         for (Tag nationTag : nationsListTag) {
             if (nationTag instanceof CompoundTag nationCompound) {
+                // Handle legacy data without UUIDs
                 UUID nationId = nationCompound.hasUUID("nationId")
                         ? nationCompound.getUUID("nationId")
                         : UUID.randomUUID();
@@ -155,6 +181,9 @@ public class NationsSavedData extends SavedData {
         return data;
     }
 
+    /**
+     * Save data to NBT format
+     */
     @Override
     public CompoundTag save(CompoundTag compound) {
         ListTag nationsListTag = new ListTag();

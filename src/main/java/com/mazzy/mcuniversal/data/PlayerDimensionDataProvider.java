@@ -8,19 +8,31 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
- * Capability provider that attaches PlayerDimensionData to Player entities.
- * Also handles serialization and deserialization.
+ * Forge capability provider for player dimension access data.
+ * Handles registration, storage, and serialization of dimension permissions
+ * using Minecraft's capability system and NBT persistence.
  */
 public class PlayerDimensionDataProvider implements ICapabilityProvider, ICapabilitySerializable<CompoundTag> {
-    // Register (or retrieve) your capability reference.
+
+    /**
+     * Capability instance that identifies and provides access to dimension data.
+     * Registered once during mod setup using CapabilityManager.
+     */
     public static final Capability<IPlayerDimensionData> PLAYER_DIMENSION_DATA =
             CapabilityManager.get(new CapabilityToken<>() {});
 
-    // The data being stored for the player.
+    // Backing implementation of the capability
     private final PlayerDimensionData backend = new PlayerDimensionData();
-    // Expose the data via a LazyOptional so other classes can safely access it.
+
+    // Lazy wrapper for capability instance (thread-safe initialization)
     private final LazyOptional<IPlayerDimensionData> optionalData = LazyOptional.of(() -> backend);
 
+    /**
+     * Provides access to the capability instance if requested
+     * @param cap Capability being queried
+     * @param side Logical side (client/server) - not used in this implementation
+     * @return LazyOptional containing capability if it matches our PLAYER_DIMENSION_DATA
+     */
     @Nonnull
     @Override
     public <T> LazyOptional<T> getCapability(@Nonnull Capability<T> cap, @Nullable Direction side) {
@@ -28,9 +40,8 @@ public class PlayerDimensionDataProvider implements ICapabilityProvider, ICapabi
     }
 
     /**
-     * Saves the player's dimension data to an NBT tag
-     * so it can be written to the player's data file.
-     * (Forge calls this automatically once it's an ICapabilitySerializable.)
+     * Serializes capability data to NBT for world saving
+     * @return CompoundTag containing all dimension access data
      */
     @Override
     public CompoundTag serializeNBT() {
@@ -38,8 +49,8 @@ public class PlayerDimensionDataProvider implements ICapabilityProvider, ICapabi
     }
 
     /**
-     * Loads the player's dimension data from NBT when the world/player data is read.
-     * (Forge calls this automatically once it's an ICapabilitySerializable.)
+     * Restores capability data from saved NBT
+     * @param nbt CompoundTag containing previously saved dimension data
      */
     @Override
     public void deserializeNBT(CompoundTag nbt) {

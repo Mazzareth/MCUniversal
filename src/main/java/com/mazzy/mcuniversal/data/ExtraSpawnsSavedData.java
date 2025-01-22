@@ -10,15 +10,20 @@ import net.minecraft.core.BlockPos;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Manages persistent storage of custom spawn points in special dimensions
+ * Tracks usage status to prevent spawn point reuse
+ */
 public class ExtraSpawnsSavedData extends SavedData {
-
+    // Persistent storage identifier
     private static final String DATA_NAME = "mcuniversal_extra_spawns";
 
+    /** Represents a single spawn point with usage state */
     public static class SpawnEntry {
         public int x;
         public int y;
         public int z;
-        public boolean used;
+        public boolean used; // True if this spawn has been claimed
 
         public SpawnEntry(int x, int y, int z, boolean used) {
             this.x = x;
@@ -30,6 +35,11 @@ public class ExtraSpawnsSavedData extends SavedData {
 
     private final List<SpawnEntry> spawnList = new ArrayList<>();
 
+    /**
+     * Gets or creates the spawn data for a dimension
+     * @param level Target dimension to get data for
+     * @return Existing or fresh spawn data instance
+     */
     public static ExtraSpawnsSavedData get(ServerLevel level) {
         return level.getDataStorage().computeIfAbsent(
                 ExtraSpawnsSavedData::load,
@@ -38,26 +48,42 @@ public class ExtraSpawnsSavedData extends SavedData {
         );
     }
 
+    /** Required constructor for data loading */
     public ExtraSpawnsSavedData() {}
 
+    /**
+     * Loads spawn data from NBT storage
+     * @param tag Contains serialized spawn entries
+     * @return Populated data instance
+     */
     public static ExtraSpawnsSavedData load(CompoundTag tag) {
         ExtraSpawnsSavedData data = new ExtraSpawnsSavedData();
         ListTag spawnEntries = tag.getList("spawns", Tag.TAG_COMPOUND);
+
+        // Reconstruct spawn list from saved NBT data
         for (Tag t : spawnEntries) {
             if (t instanceof CompoundTag c) {
-                int x = c.getInt("x");
-                int y = c.getInt("y");
-                int z = c.getInt("z");
-                boolean used = c.getBoolean("used");
-                data.spawnList.add(new SpawnEntry(x, y, z, used));
+                data.spawnList.add(new SpawnEntry(
+                        c.getInt("x"),
+                        c.getInt("y"),
+                        c.getInt("z"),
+                        c.getBoolean("used")
+                ));
             }
         }
         return data;
     }
 
+    /**
+     * Saves spawn data to NBT format
+     * @param compound Tag to write data into
+     * @return Modified compound with spawn data
+     */
     @Override
     public CompoundTag save(CompoundTag compound) {
         ListTag list = new ListTag();
+
+        // Serialize all spawn entries
         for (SpawnEntry entry : spawnList) {
             CompoundTag c = new CompoundTag();
             c.putInt("x", entry.x);
@@ -70,19 +96,24 @@ public class ExtraSpawnsSavedData extends SavedData {
         return compound;
     }
 
+    /**
+     * Registers a new spawn point
+     * @param pos Location to add as spawn point
+     */
     public void addSpawn(BlockPos pos) {
         spawnList.add(new SpawnEntry(pos.getX(), pos.getY(), pos.getZ(), false));
-        setDirty();
+        setDirty(); // Mark data for saving
     }
 
     /**
-     * Claims (consumes) a free spawn by marking it as used.
+     * Claims the first available unused spawn point
+     * @return SpawnEntry with marked usage, or null if none available
      */
     public SpawnEntry claimFreeSpawn() {
         for (SpawnEntry entry : spawnList) {
             if (!entry.used) {
                 entry.used = true;
-                setDirty();
+                setDirty(); // Mark data for saving
                 return entry;
             }
         }
@@ -90,8 +121,8 @@ public class ExtraSpawnsSavedData extends SavedData {
     }
 
     /**
-     * Retrieves the first free spawn but does NOT mark it as used.
-     * If none is available, returns null.
+     * Checks for available spawn points without claiming them
+     * @return First unused SpawnEntry or null
      */
     public SpawnEntry peekFreeSpawn() {
         for (SpawnEntry entry : spawnList) {

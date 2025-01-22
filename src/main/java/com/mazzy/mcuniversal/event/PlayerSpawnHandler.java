@@ -14,33 +14,40 @@ import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
+/**
+ * Handles automatic spawn assignment in a custom dimension for new players.
+ * Manages first-time spawn allocations and prevents respawn point conflicts.
+ */
 @Mod.EventBusSubscriber
 public class PlayerSpawnHandler {
 
+    // Identifier for the custom dimension where spawns will be assigned
     private static final ResourceLocation EXTRA_DIM_ID = new ResourceLocation("mcuniversal", "extra");
+    // Resource key for the custom dimension registration
     private static final ResourceKey<Level> EXTRA_DIM_KEY = ResourceKey.create(Registries.DIMENSION, EXTRA_DIM_ID);
 
+    /**
+     * Processes player logins to assign initial spawn points in the custom dimension.
+     * @param event Triggered when a player successfully logs into the server
+     */
     @SubscribeEvent
     public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) {
             return;
         }
 
-        // 1) If the player already has a forced spawn in the Extra dimension, skip
+        // Skip players already set to respawn in the custom dimension
         if (player.getRespawnDimension().location().equals(EXTRA_DIM_ID)) {
             return;
         }
 
-        /*
-         * 2) Check the player’s persistent data to see if we've already assigned
-         *    an Extra dimension spawn. If so, skip.
-         */
+        // Check persistent data to prevent re-assignment
         CompoundTag persistentData = player.getPersistentData();
         if (persistentData.getBoolean("extraDimSpawnAssigned")) {
             return;
         }
 
-        // 3) Retrieve the Extra dimension
+        // Access the custom dimension world instance
         ServerLevel extraDimension = player.server.getLevel(EXTRA_DIM_KEY);
         if (extraDimension == null) {
             player.sendSystemMessage(
@@ -49,7 +56,7 @@ public class PlayerSpawnHandler {
             return;
         }
 
-        // 4) Claim (and thereby remove) a free spawn from the pool
+        // Claim a spawn point from managed spawn data
         ExtraSpawnsSavedData spawnsData = ExtraSpawnsSavedData.get(extraDimension);
         ExtraSpawnsSavedData.SpawnEntry entry = spawnsData.claimFreeSpawn();
         if (entry == null) {
@@ -59,30 +66,30 @@ public class PlayerSpawnHandler {
             return;
         }
 
-        // 5) Assign the player's respawn point in the Extra dimension
+        // Configure player's spawn point
         BlockPos spawnPos = new BlockPos(entry.x, entry.y, entry.z);
         player.setRespawnPosition(
                 extraDimension.dimension(),
                 spawnPos,
                 player.getYRot(),
-                true,
-                false
+                true,  // Force spawn position even if obstructed
+                false  // Don't show respawn animation
         );
 
-        // 6) Teleport them right away if desired
+        // Teleport player to new spawn location with center-block alignment
         player.teleportTo(
                 extraDimension,
-                entry.x + 0.5,
-                entry.y + 0.1,
-                entry.z + 0.5,
+                entry.x + 0.5,  // Center of block X
+                entry.y + 0.1,  // Slightly above block Y to prevent clipping
+                entry.z + 0.5,  // Center of block Z
                 player.getYRot(),
                 player.getXRot()
         );
 
-        // 7) Mark their spawn as assigned in their persistent data
+        // Mark player as having received a spawn assignment
         persistentData.putBoolean("extraDimSpawnAssigned", true);
 
-        // 8) Notify the player
+        // Notify player of their new spawn coordinates
         player.sendSystemMessage(
                 Component.literal(
                         "Assigned Extra dimension spawn at: " +

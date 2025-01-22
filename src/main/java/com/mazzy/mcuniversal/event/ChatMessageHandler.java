@@ -9,37 +9,56 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraft.world.level.Level;
 import net.minecraft.network.chat.Component;
 
+/**
+ * Handles chat messages by decorating them with nation affiliation tags.
+ * Integrates with Forge's event system to modify chat messages in real-time.
+ */
 public class ChatMessageHandler {
 
+    /**
+     * Registers this handler with Forge's event bus automatically on instantiation
+     */
     public ChatMessageHandler() {
-        // Register this handler on the EventBus
         MinecraftForge.EVENT_BUS.register(this);
     }
 
+    /**
+     * Processes server chat events to add nation prefixes to messages.
+     * <p>
+     * When a player in a nation sends a chat message:
+     * 1. Looks up player's nation affiliation
+     * 2. Prepends nation tag in format: "[NationName] - PlayerName message"
+     * 3. Broadcasts modified message to all players
+     * 4. Cancels original plain message
+     *
+     * @param event The chat event containing player and message data
+     */
     @SubscribeEvent
     public void onServerChat(ServerChatEvent event) {
         ServerPlayer player = event.getPlayer();
         Level level = player.level();
-        if (level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
 
-            // Retrieve your NationsSavedData, to find the player's nation
+        // Only process on server side with valid world data
+        if (level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
             NationsSavedData nationsData = NationsSavedData.get(serverLevel);
             NationEntry nation = nationsData.getNationByMember(player.getUUID());
 
-            // If the player is in a nation, prepend the nation name to chat
             if (nation != null) {
                 String nationName = nation.getName();
                 String playerName = player.getName().getString();
                 String originalMessage = event.getMessage().getString();
-                // Build your custom chat text
-                // [Nation_Name] - [Player Name] "Message Content!"
+
+                // Create nation-tagged message format
                 String newMessage = "[" + nationName + "] - " + playerName + " " + originalMessage;
 
-                // Cancel the event's default chat handling
+                // Prevent original message from being sent
                 event.setCanceled(true);
 
-                // Broadcast our own message (using a component) to all players
-                serverLevel.getServer().getPlayerList().broadcastSystemMessage(Component.literal(newMessage), false);
+                // Broadcast modified message to all players
+                serverLevel.getServer().getPlayerList().broadcastSystemMessage(
+                        Component.literal(newMessage),
+                        false
+                );
             }
         }
     }

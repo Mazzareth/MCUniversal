@@ -5,48 +5,41 @@ import net.minecraftforge.network.NetworkEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
-
 import com.mazzy.mcuniversal.core.client.ClientMethods;
 
 /**
- * Packet to instruct the client to open the DimensionalAmuletScreen
- * and provide the unlocked dimension IDs for the local player.
+ * Network packet for opening the dimensional amulet interface on clients.
+ * Synchronizes unlocked dimensions from server to client for GUI display.
  */
 public class OpenDimensionalAmuletPacket {
 
+    /** List of unlocked dimension resource locations (e.g., "minecraft:overworld") */
     private final List<String> unlockedDimensions;
 
-    /**
-     * Create a new packet with the given list of unlocked dimension IDs.
-     */
+    /** Primary constructor for server-side packet creation */
     public OpenDimensionalAmuletPacket(List<String> unlockedDimensions) {
         this.unlockedDimensions = unlockedDimensions;
     }
 
-    /**
-     * Empty constructor for network framework only.
-     */
+    /** Empty constructor for client-side packet decoding */
     public OpenDimensionalAmuletPacket() {
         this.unlockedDimensions = new ArrayList<>();
     }
 
+    /** @return Read-only list of dimension IDs available to the player */
     public List<String> getUnlockedDimensions() {
         return unlockedDimensions;
     }
 
-    // ------------------------------------------------------------------------
-    // Encoding: write data to buffer
-    // ------------------------------------------------------------------------
+    /** Serializes packet data for network transmission */
     public static void encode(OpenDimensionalAmuletPacket packet, FriendlyByteBuf buf) {
         buf.writeInt(packet.unlockedDimensions.size());
         for (String dimId : packet.unlockedDimensions) {
-            buf.writeUtf(dimId);
+            buf.writeUtf(dimId);  // UTF-8 string with max length 32767
         }
     }
 
-    // ------------------------------------------------------------------------
-    // Decoding: read data back from buffer
-    // ------------------------------------------------------------------------
+    /** Deserializes packet data from network transmission */
     public static OpenDimensionalAmuletPacket decode(FriendlyByteBuf buf) {
         OpenDimensionalAmuletPacket pkt = new OpenDimensionalAmuletPacket();
         int size = buf.readInt();
@@ -56,16 +49,17 @@ public class OpenDimensionalAmuletPacket {
         return pkt;
     }
 
-    // ------------------------------------------------------------------------
-    // Client-side handling
-    // ------------------------------------------------------------------------
+    /** Handles packet reception on client-side */
     public static void handle(OpenDimensionalAmuletPacket packet, Supplier<NetworkEvent.Context> ctxSupplier) {
         NetworkEvent.Context ctx = ctxSupplier.get();
+
+        // Only process on client side
         if (!ctx.getDirection().getReceptionSide().isClient()) {
             return;
         }
+
         ctx.enqueueWork(() -> {
-            // Open the GUI with the unlocked dimension IDs
+            // Forward dimension list to client-side GUI handler
             ClientMethods.openDimensionalAmuletScreen(packet.getUnlockedDimensions());
         });
         ctx.setPacketHandled(true);

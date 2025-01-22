@@ -134,8 +134,8 @@ Adding Libraries to Inheritance
 Reading Input: C:\dev\MCUniversal\build\libs\mcuniversal-0.1.0.jar
 Adding input to inheritance map
 Processing entries
-Conflicting propagated mapping for com/mazzy/mcuniversal/data/NationsSavedData/save(Lnet/minecraft/nbt/CompoundTag;)Lnet/minecraft/nbt/CompoundTag; from net/minecraft/world/level/saveddata/SavedData/save(Lnet/minecraft/nbt/CompoundTag;)Lnet/minecraft/nbt/CompoundTag;: save -> m_7176_
 Conflicting propagated mapping for com/mazzy/mcuniversal/data/ExtraSpawnsSavedData/save(Lnet/minecraft/nbt/CompoundTag;)Lnet/minecraft/nbt/CompoundTag; from net/minecraft/world/level/saveddata/SavedData/save(Lnet/minecraft/nbt/CompoundTag;)Lnet/minecraft/nbt/CompoundTag;: save -> m_7176_
+Conflicting propagated mapping for com/mazzy/mcuniversal/data/NationsSavedData/save(Lnet/minecraft/nbt/CompoundTag;)Lnet/minecraft/nbt/CompoundTag; from net/minecraft/world/level/saveddata/SavedData/save(Lnet/minecraft/nbt/CompoundTag;)Lnet/minecraft/nbt/CompoundTag;: save -> m_7176_
 Conflicting propagated mapping for com/mazzy/mcuniversal/core/screen/DimensionalAmuletScreen/keyPressed(III)Z from net/minecraft/client/gui/screens/Screen/keyPressed(III)Z: keyPressed -> m_7933_
 Conflicting propagated mapping for com/mazzy/mcuniversal/core/screen/DimensionalAmuletScreen/isPauseScreen()Z from net/minecraft/client/gui/screens/Screen/isPauseScreen()Z: isPauseScreen -> m_7043_
 Conflicting propagated mapping for com/mazzy/mcuniversal/core/screen/DimensionalAmuletScreen/render(Lnet/minecraft/client/gui/GuiGraphics;IIF)V from net/minecraft/client/gui/screens/Screen/render(Lnet/minecraft/client/gui/GuiGraphics;IIF)V: render -> m_88315_
@@ -196,7 +196,9 @@ Writing Output: C:\dev\MCUniversal\build\reobfJar\output.jar
   com/mazzy/mcuniversal/event/ServerEvents.class
   com/mazzy/mcuniversal/network/
   com/mazzy/mcuniversal/network/DimensionalAmuletActionPacket$1.class
+  com/mazzy/mcuniversal/network/DimensionalAmuletActionPacket$2.class
   com/mazzy/mcuniversal/network/DimensionalAmuletActionPacket$Action.class
+  com/mazzy/mcuniversal/network/DimensionalAmuletActionPacket$TeleportTask.class
   com/mazzy/mcuniversal/network/DimensionalAmuletActionPacket.class
   com/mazzy/mcuniversal/network/GlobalWaypointsPacket$1.class
   com/mazzy/mcuniversal/network/GlobalWaypointsPacket$WaypointAction.class
