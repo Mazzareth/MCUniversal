@@ -9,13 +9,19 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.BossEvent;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkStatus;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.TicketType;
+import net.minecraft.util.Unit;
 import net.minecraft.world.level.Level;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.*;
+import net.minecraft.util.Unit;
 
 public class TeleportManager {
+    private static final ExecutorService ASYNC_WORKER = Executors.newFixedThreadPool(2);
+    private static final TicketType<ChunkPos> TELEPORT_TICKET = TicketType.create("mcuniversal_teleport", Comparator.comparingLong(ChunkPos::toLong));
+
     public static final Map<UUID, TeleportTask> ACTIVE_TELEPORTS = new ConcurrentHashMap<>();
     public static final LinkedHashMap<ChunkPos, Boolean> CHUNK_CACHE = new LinkedHashMap<>(50, 0.75f, true) {
         @Override
@@ -116,99 +122,175 @@ public class TeleportManager {
     }
 
     public static void scheduleNextStep(TeleportTask task, int delay) {
-        task.player.getServer().execute(() -> {
+        task.player.getServer().submitAsync(() -> {
+            try {
+                if (delay > 0) {
+                    Thread.sleep(delay * 50L);
+                }
+            } catch (InterruptedException ignored) {
+                Thread.currentThread().interrupt();
+            }
+        }).thenRunAsync(() -> {
             if (!validateTask(task)) return;
+
             float tickTime = task.level.getServer().getAverageTickTime();
             int maxOperations = tickTime > 45 ? 1 : tickTime > 30 ? 2 : 3;
 
             switch (task.phase) {
-                case CHUNK_PREP:
-                    processInitialChunkLoad(task, maxOperations);
-                    break;
-                case POSITION_SCAN:
-                    processPositionScan(task, maxOperations);
-                    break;
-                case WARMUP:
-                    processWarmup(task);
-                    break;
-                case POST_SCAN_LOAD:
+                case CHUNK_PREP -> processInitialChunkLoad(task, maxOperations);
+                case POSITION_SCAN -> processPositionScan(task, maxOperations);
+                case WARMUP -> processWarmup(task);
+                case POST_SCAN_LOAD -> {
                     processPostScanLoading(task, maxOperations);
                     processWarmup(task);
-                    break;
+                }
             }
-        });
+        }, task.player.getServer());
+    }
+
+    private static void processTaskPhase(TeleportTask task) {
+        float tickTime = task.level.getServer().getAverageTickTime();
+        int maxOperations = tickTime > 45 ? 1 : tickTime > 30 ? 2 : 3;
+
+        switch (task.phase) {
+            case CHUNK_PREP:
+                processInitialChunkLoad(task, maxOperations);
+                break;
+            case POSITION_SCAN:
+                processPositionScan(task, maxOperations);
+                break;
+            case WARMUP:
+                processWarmup(task);
+                break;
+            case POST_SCAN_LOAD:
+                processPostScanLoading(task, maxOperations);
+                processWarmup(task);
+                break;
+        }
     }
 
     private static void processInitialChunkLoad(TeleportTask task, int maxOperations) {
-        if (!task.level.hasChunk(task.targetChunk.x, task.targetChunk.z)) {
-            task.level.getChunk(task.targetChunk.x, task.targetChunk.z, ChunkStatus.FULL, true);
-            task.chunksLoaded++;
-        }
+        ASYNC_WORKER.submit(() -> {
+            task.level.getChunkSource().addRegionTicket(
+                    TELEPORT_TICKET,
+                    task.targetChunk,
+                    2,
+                    task.targetChunk
+            );
 
-        if (task.chunksLoaded >= 1) {
-            task.phase = TeleportTask.Phase.POSITION_SCAN;
-            task.scanY = task.level.getMaxBuildHeight();
-            task.bossBar.setName(Component.literal("Scanning for safe position..."));
-            scheduleNextStep(task, 0);
-        }
+            task.player.getServer().execute(() -> {
+                if (!task.level.hasChunk(task.targetChunk.x, task.targetChunk.z)) {
+                    task.level.getChunk(task.targetChunk.x, task.targetChunk.z, ChunkStatus.FULL, true);
+                }
+
+                task.phase = TeleportTask.Phase.POSITION_SCAN;
+                task.scanY = task.level.getMaxBuildHeight();
+                task.bossBar.setName(Component.literal("Scanning for safe position..."));
+                scheduleNextStep(task, 1);
+            });
+        });
     }
 
     private static void processPositionScan(TeleportTask task, int maxOperations) {
-        ChunkAccess chunk = task.level.getChunk(task.targetChunk.x, task.targetChunk.z);
-        int operationsDone = 0;
+        ASYNC_WORKER.submit(() -> {
+            ChunkAccess chunk = task.level.getChunk(task.targetChunk.x, task.targetChunk.z);
+            BlockPos foundPos = null;
+            int localScanY = task.scanY;
+            int operationsDone = 0;
 
-        while (operationsDone < maxOperations && task.scanY >= task.level.getMinBuildHeight()) {
-            // Fixed the argument count here
-            task.foundPos = TeleportPositionHelper.findValidPosition(
-                    task.level,  // Added ServerLevel parameter
-                    chunk,
-                    task.targetChunk,
-                    task.scanY,
-                    task.harshScan
-            );
-            if (task.foundPos != null) break;
-            task.scanY -= task.harshScan ? TeleportConstants.HARSH_SCAN_STEP : TeleportConstants.SCAN_STEP;
-            operationsDone++;
-        }
+            while (operationsDone < maxOperations && localScanY >= task.level.getMinBuildHeight()) {
+                foundPos = TeleportPositionHelper.findValidPosition(
+                        task.level,
+                        chunk,
+                        task.targetChunk,
+                        localScanY,
+                        task.harshScan
+                );
+                if (foundPos != null) break;
+                localScanY -= task.harshScan ?
+                        TeleportConstants.HARSH_SCAN_STEP :
+                        TeleportConstants.SCAN_STEP;
+                operationsDone++;
+            }
 
-        if (task.foundPos != null) {
-            task.phase = TeleportTask.Phase.POST_SCAN_LOAD;
-            task.chunksToLoad = TeleportPositionHelper.generateChunkGrid(task.targetChunk,
-                    task.level.dimension().equals(Level.OVERWORLD) ?
-                            TeleportConstants.OVERWORLD_CHUNK_PREGEN_RADIUS :
-                            TeleportConstants.CHUNK_PREGEN_RADIUS);
-            task.totalChunksToLoad = task.chunksToLoad.size();
-            task.chunksLoadedPostScan = 0;
-            task.warmupTicks = 1;
-            task.bossBar.setName(Component.literal("Preparing area..."));
-            scheduleNextStep(task, 0);
-        } else if (task.scanY < task.level.getMinBuildHeight()) {
-            handleScanFailure(task);
-        } else {
-            task.bossBar.setProgress(1 - (float) task.scanY / task.level.getMaxBuildHeight());
-            scheduleNextStep(task, 1);
-        }
+            final BlockPos finalPos = foundPos;
+            final int finalScanY = localScanY;
+
+            task.player.getServer().execute(() -> {
+                task.foundPos = finalPos;
+                task.scanY = finalScanY;
+
+                if (task.foundPos != null) {
+                    task.phase = TeleportTask.Phase.POST_SCAN_LOAD;
+                    task.chunksToLoad = TeleportPositionHelper.generateChunkGrid(
+                            task.targetChunk,
+                            task.level.dimension().equals(Level.OVERWORLD) ?
+                                    TeleportConstants.OVERWORLD_CHUNK_PREGEN_RADIUS :
+                                    TeleportConstants.CHUNK_PREGEN_RADIUS
+                    );
+                    task.totalChunksToLoad = task.chunksToLoad.size();
+                    task.chunksLoadedPostScan = 0;
+                    task.warmupTicks = 1;
+                    task.bossBar.setName(Component.literal("Preparing area..."));
+                    scheduleNextStep(task, 1);
+                } else if (task.scanY < task.level.getMinBuildHeight()) {
+                    handleScanFailure(task);
+                } else {
+                    task.bossBar.setProgress(1 - (float) task.scanY / task.level.getMaxBuildHeight());
+                    scheduleNextStep(task, 1);
+                }
+            });
+        });
     }
 
     private static void processPostScanLoading(TeleportTask task, int maxOperations) {
-        for (int i = 0; i < maxOperations && task.chunksLoadedPostScan < task.totalChunksToLoad; i++) {
-            ChunkPos current = task.chunksToLoad.get(task.chunksLoadedPostScan);
-            if (!task.level.hasChunk(current.x, current.z)) {
-                task.level.getChunk(current.x, current.z,
-                        task.level.dimension().equals(Level.OVERWORLD) ?
-                                ChunkStatus.STRUCTURE_STARTS :
-                                ChunkStatus.FULL,
-                        true);
-            }
-            task.chunksLoadedPostScan++;
-        }
+        ASYNC_WORKER.submit(() -> {
+            List<ChunkPos> chunksToProcess = new ArrayList<>(
+                    task.chunksToLoad.subList(
+                            task.chunksLoadedPostScan,
+                            Math.min(
+                                    task.chunksLoadedPostScan + maxOperations,
+                                    task.totalChunksToLoad
+                            )
+                    )
+            );
 
-        task.bossBar.setName(Component.literal(String.format(
-                "Preparing area (%d/%d) | Warping in %.1fs",
-                task.chunksLoadedPostScan,
-                task.totalChunksToLoad,
-                (20 * TeleportConstants.WARMUP_SECONDS - task.warmupTicks) / 20f
-        )));
+            chunksToProcess.forEach(chunk ->
+                    task.level.getChunkSource().addRegionTicket(
+                            TELEPORT_TICKET,
+                            chunk,
+                            3,
+                            chunk
+                    )
+            );
+
+            task.player.getServer().execute(() -> {
+                chunksToProcess.forEach(chunk -> {
+                    if (!task.level.hasChunk(chunk.x, chunk.z)) {
+                        task.level.getChunk(
+                                chunk.x,
+                                chunk.z,
+                                task.level.dimension().equals(Level.OVERWORLD) ?
+                                        ChunkStatus.STRUCTURE_STARTS :
+                                        ChunkStatus.FULL,
+                                true
+                        );
+                    }
+                });
+
+                task.chunksLoadedPostScan += chunksToProcess.size();
+                task.bossBar.setName(Component.literal(String.format(
+                        "Preparing area (%d/%d) | Warping in %.1fs",
+                        task.chunksLoadedPostScan,
+                        task.totalChunksToLoad,
+                        (20 * TeleportConstants.WARMUP_SECONDS - task.warmupTicks) / 20f
+                )));
+
+                if (task.chunksLoadedPostScan < task.totalChunksToLoad) {
+                    scheduleNextStep(task, 1);
+                }
+            });
+        });
     }
 
     private static void handleScanFailure(TeleportTask task) {
@@ -223,6 +305,7 @@ public class TeleportManager {
                 task.chunksToLoad = Collections.singletonList(task.targetChunk);
                 task.chunksLoaded = 0;
                 task.scanY = task.level.getMaxBuildHeight();
+                task.warmupTicks = 0;
                 scheduleNextStep(task, 0);
                 return;
             }
@@ -233,6 +316,7 @@ public class TeleportManager {
             task.chunksToLoad = Collections.singletonList(task.targetChunk);
             task.chunksLoaded = 0;
             task.scanY = task.level.getMaxBuildHeight();
+            task.warmupTicks = 0;
             scheduleNextStep(task, 0);
         }
     }
@@ -240,12 +324,6 @@ public class TeleportManager {
     protected static boolean validateTask(TeleportTask task) {
         if (!task.player.isAlive() || task.player.level().isClientSide ||
                 System.currentTimeMillis() - task.startTime > TeleportConstants.MAX_TASK_DURATION_MS) {
-            cleanupTask(task);
-            return false;
-        }
-
-        if (task.warmupTicks > 0 && task.player.distanceToSqr(task.startPos.getX(), task.startPos.getY(), task.startPos.getZ()) > 1.0) {
-            task.player.sendSystemMessage(Component.literal("Teleport cancelled!"));
             cleanupTask(task);
             return false;
         }
@@ -257,5 +335,7 @@ public class TeleportManager {
         synchronized (ACTIVE_TELEPORTS) {
             ACTIVE_TELEPORTS.remove(task.player.getUUID());
         }
+        // Release all chunk tickets
+        task.level.getChunkSource().removeRegionTicket(TELEPORT_TICKET, task.targetChunk, 2, task.targetChunk);
     }
 }

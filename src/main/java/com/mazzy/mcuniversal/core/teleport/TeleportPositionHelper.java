@@ -13,7 +13,6 @@ import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class TeleportPositionHelper {
-    // Modified method signature to accept ServerLevel
     public static BlockPos findValidPosition(ServerLevel level, ChunkAccess chunk, ChunkPos chunkPos, int startY, boolean harshScan) {
         List<Integer> xOffsets = new ArrayList<>();
         List<Integer> zOffsets = new ArrayList<>();
@@ -51,7 +50,6 @@ public class TeleportPositionHelper {
         return null;
     }
 
-    // Now using ServerLevel directly
     private static int getScanStep(ServerLevel level, boolean harshScan) {
         if (harshScan) return TeleportConstants.HARSH_SCAN_STEP;
         return level.dimension().equals(Level.OVERWORLD) ?
@@ -59,7 +57,6 @@ public class TeleportPositionHelper {
                 TeleportConstants.SCAN_STEP;
     }
 
-    // Rest of the class remains unchanged
     public static boolean isPositionValid(ChunkAccess chunk, BlockPos pos, boolean harshScan) {
         BlockState state = chunk.getBlockState(pos);
         BlockState below = chunk.getBlockState(pos.below());
